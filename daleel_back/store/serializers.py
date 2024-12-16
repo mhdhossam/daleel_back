@@ -15,6 +15,16 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name','created_at']
+        read_only_fields = ['id', 'created_at']
+
+
+
+
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     """
@@ -42,3 +52,4 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ['id', 'user', 'order_items', 'total_price', 'status', 'created_at', 'updated_at']
         read_only_fields = ['id', 'status', 'total_price', 'created_at', 'updated_at']
+
