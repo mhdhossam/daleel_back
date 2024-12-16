@@ -1,6 +1,7 @@
 from datetime import timedelta
 import os
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -8,8 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kt#la9z@j7d)whvrk_utgsq3t$-1er^afh)7sq7x24&$&7-b2a'
+SECRET_KEY = config('SECRET_KEY')
 
 
 
