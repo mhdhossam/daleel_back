@@ -1,5 +1,5 @@
 from django.db import models
-from client.models import CustomUser # For Vendor/User association
+from client.models import Vendor,Customer # For Vendor/User association
 
 
 class Product(models.Model):
@@ -12,7 +12,7 @@ class Product(models.Model):
 
     
     vendor = models.ForeignKey(
-        CustomUser, 
+        Vendor, 
         on_delete=models.CASCADE, 
         related_name='products', 
         help_text="The vendor who owns this product"
@@ -82,7 +82,7 @@ class Order(models.Model):
 
     # Relationships
     user = models.ForeignKey(
-        CustomUser, 
+        Customer, 
         on_delete=models.CASCADE, 
         related_name='orders', 
         help_text="The user who placed the order"
