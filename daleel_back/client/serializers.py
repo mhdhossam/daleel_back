@@ -56,6 +56,7 @@ class CustomerRegisterSerializer(BaseUserRegisterSerializer):
         return user
 
 
+
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
@@ -68,15 +69,21 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         token['email'] = user.email
 
-        # Determine user type and add specific fields
-        if hasattr(user, 'business_name'):
-            token['user_type'] = 'Vendor'
-            token['business_name'] = user.business_name
-            token['business_address'] = user.business_address
-        elif hasattr(user, 'shipping_address'):
-            token['user_type'] = 'Customer'
-            token['shipping_address'] = user.shipping_address
-        else:
+        # Explicitly check for related Vendor or Customer model
+        try:
+            if hasattr(user, 'vendor'):
+                vendor = Vendor.objects.get(pk=user.pk)  # Load vendor data
+                token['user_type'] = 'Vendor'
+                token['business_name'] = vendor.business_name
+                token['business_address'] = vendor.business_address
+            elif hasattr(user, 'customer'):
+                customer = Customer.objects.get(pk=user.pk)  # Load customer data
+                token['user_type'] = 'Customer'
+                token['shipping_address'] = customer.shipping_address
+            else:
+                token['user_type'] = 'User'
+        except (Vendor.DoesNotExist, Customer.DoesNotExist):
             token['user_type'] = 'User'
 
         return token
+
