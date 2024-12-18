@@ -10,6 +10,7 @@ from rest_framework import status
 from.models import * 
 from.serializers import *
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 
@@ -18,7 +19,8 @@ class AddToCartView(CreateAPIView):
     Add a product to the cart. If a cart doesn't exist, it creates one.
     If the product is already in the cart, it updates the quantity.
     """
-    permission_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
     serializer_class = OrderItemSerializer
 
     def perform_create(self, serializer):

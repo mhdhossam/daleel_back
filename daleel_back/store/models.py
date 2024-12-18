@@ -124,6 +124,13 @@ class Order(models.Model):
         total = sum(item.get_total_price() for item in self.order_items.all())
         self.total_price = total
         self.save()
+    @classmethod
+    def get_cart(cls, user):
+        return cls.objects.filter(user=user, status='CART').first()
+
+
+
+
 
 class OrderItem(models.Model):
     """
@@ -150,8 +157,11 @@ class OrderItem(models.Model):
         return f"{self.quantity} x {self.product.name}"
 
     def get_total_price(self):
-        """
-        Returns the total price for this item.
-        """
         return self.quantity * self.price
+
+    def save(self, *args, **kwargs):
+        if not self.price:
+            self.price = self.product.price
+        super().save(*args, **kwargs)
+        self.order.calculate_total_price()
     
