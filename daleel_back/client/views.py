@@ -7,7 +7,6 @@ from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import CustomUser,Vendor, Customer
-from .serializers import UserRegistrationSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenObtainPairSerializer,VendorRegisterSerializer, CustomerRegisterSerializer
 
@@ -44,5 +43,5 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     Custom Login View to issue JWT tokens with extended payload.
     """
     serializer_class = CustomTokenObtainPairSerializer
-    pass
+    
 

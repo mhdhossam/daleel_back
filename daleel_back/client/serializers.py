@@ -1,12 +1,11 @@
 from rest_framework import serializers
 from .models import Vendor, Customer,CustomUser
-from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 # Base Registration Serializer
 class BaseUserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=6, required=True)
+    password = serializers.CharField()
 
     class Meta:
         model = CustomUser
