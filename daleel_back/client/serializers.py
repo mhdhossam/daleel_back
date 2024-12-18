@@ -5,7 +5,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 # Base Registration Serializer
 class BaseUserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField()
+    password = serializers.CharField(write_only=True, min_length=6, required=True)
+
 
     class Meta:
         model = CustomUser
