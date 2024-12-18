@@ -33,7 +33,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
     """
     vendor_name = serializers.CharField(source='product.vendor.username', read_only=True)
     product_name = serializers.CharField(source='product.name', read_only=True)
-    product_price = serializers.DecimalField(source='product.price', read_only=True)
+    product_price = serializers.DecimalField(source='product.price', read_only=True , max_digits=6 , decimal_places=2,)
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)  # Read-only field
 
     class Meta:
