@@ -59,7 +59,8 @@ class RemoveFromCartView(DestroyAPIView):
     """
     Remove a product from the cart.
     """
-    permission_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
 
@@ -86,7 +87,8 @@ class ViewCartView(RetrieveAPIView):
     """
     View the contents of the cart.
     """
-    permission_classes = [JWTAuthentication]
+    permission_classes=[IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
     serializer_class = OrderSerializer
 
     def get_object(self):
