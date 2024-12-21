@@ -3,12 +3,36 @@ from rest_framework.generics import (
     CreateAPIView,
     DestroyAPIView,
 )
+from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
 from.models import * 
 from.serializers import *
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+
+
+class ProductListView(RetrieveAPIView):
+    """
+    API view to retrieve a list of all products sorted by best-selling.
+    """
+    serializer_class = ProductSerializer
+    permission_classes = [AllowAny]  # No authentication required to view products
+
+    def get_queryset(self):
+        """
+        Returns a queryset of products ordered by the sales_count in descending order.
+        """
+        return Product.objects.all().order_by('-sold_count')
+
+
+
+   
+
+
+
+
+
 
 
 
