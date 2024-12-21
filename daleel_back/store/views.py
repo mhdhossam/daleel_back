@@ -2,8 +2,6 @@ from rest_framework.generics import (
     RetrieveAPIView,
     CreateAPIView,
     DestroyAPIView,
-
-
 )
 from rest_framework.response import Response
 from rest_framework import status
@@ -97,3 +95,4 @@ class ViewCartView(RetrieveAPIView):
         if not cart:
             raise serializers.ValidationError("No active cart found.")
         return cart
+    
