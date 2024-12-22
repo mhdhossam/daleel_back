@@ -26,8 +26,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     otp = models.CharField(max_length=6, blank=True, null=True)
     is_verified = models.BooleanField(default=False)
-    is_vendor = models.BooleanField(default=False)
-    is_customer = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -56,6 +54,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 class Vendor(CustomUser):
     business_name = models.CharField(max_length=255)
     business_address = models.TextField()
+    is_vendor = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Vendor"
@@ -65,6 +64,7 @@ class Vendor(CustomUser):
 # Customer Model
 class Customer(CustomUser):
     shipping_address = models.TextField()
+    is_customer = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Customer"
