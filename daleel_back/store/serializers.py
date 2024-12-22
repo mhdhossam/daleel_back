@@ -22,6 +22,24 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 
+# serializers.py
+
+class ProductDetailSerializer(serializers.ModelSerializer):
+    categories = CategorySerializer(many=True, read_only=True)
+    vendor_name = serializers.CharField(source='vendor.username', read_only=True)
+    is_in_stock = serializers.SerializerMethodField()
+    total_sold = serializers.IntegerField(source='sold_count', read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'name', 'description', 'price', 'stock', 'is_in_stock', 
+            'image', 'vendor_name', 'categories', 'total_sold', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'vendor_name', 'categories', 'total_sold', 'created_at', 'updated_at']
+
+    def get_is_in_stock(self, obj):
+        return obj.is_in_stock()
 
 
 

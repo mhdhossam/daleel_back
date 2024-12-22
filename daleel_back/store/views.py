@@ -27,7 +27,17 @@ class ProductListView(RetrieveAPIView):
 
 
 
-   
+# views.py
+from rest_framework.generics import RetrieveAPIView
+from rest_framework.permissions import AllowAny
+from .models import Product
+from .serializers import ProductDetailSerializer
+
+class ProductDetailView(RetrieveAPIView):
+    queryset = Product.objects.prefetch_related('category').select_related('vendor')
+    serializer_class = ProductDetailSerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'id'  # Use 'slug' if products have slugs
 
 
 
