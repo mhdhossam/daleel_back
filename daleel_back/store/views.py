@@ -3,6 +3,7 @@ from rest_framework.generics import (
     ListAPIView,
     CreateAPIView,
     DestroyAPIView,
+    
 )
 from rest_framework import generics
 from rest_framework.response import Response
@@ -11,6 +12,7 @@ from.models import *
 from.serializers import *
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from client.permissions import IsVendorPermission
 
 
 class ProductListView(ListAPIView):
@@ -34,6 +36,17 @@ class ProductDetailView(RetrieveAPIView):
 
 
 
+
+class ProductCreateView(CreateAPIView):
+    """
+    API view to allow only vendors to create products.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsVendorPermission]
+    serializer_class = ProductCreateSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user) 
 
 
 

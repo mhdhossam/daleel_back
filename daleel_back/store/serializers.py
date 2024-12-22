@@ -28,8 +28,18 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 
+class ProductCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating a Product.
+    """
+    class Meta:
+        model = Product
+        fields = ['name', 'description', 'price','stock','image','category']  # Replace with relevant fields
 
 
+        
+    def create(self, validated_data):
+        return Product.objects.create(**validated_data)    
 
 
 # serializers.py
