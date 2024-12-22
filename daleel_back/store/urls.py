@@ -9,6 +9,7 @@ from.views import( AddToCartView,
                   ProductDeleteView,
                   VendorDashboardView
                   )
+# from.payment import CreateInstaPayView, VerifyInstaPayView
 
 
 urlpatterns = [
@@ -22,6 +23,9 @@ urlpatterns = [
     path('api/store/createorder', AddToCartView.as_view(), name='add-to-cart'),
     path('api/cart/remove/<int:pk>/', RemoveFromCartView.as_view(), name='remove-from-cart'),
     path('api/store/vieworder', ViewCartView.as_view(), name='view-order'),
+    #payment
+    # path('api/payment/create/', CreateInstaPayView.as_view(), name='payment-create'),
+    # path('api/payment/verify/', VerifyInstaPayView.as_view(), name='payment-verify'),
 
 
 
