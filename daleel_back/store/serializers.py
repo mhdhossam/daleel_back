@@ -3,23 +3,33 @@ from rest_framework import serializers
 
 
 
-class ProductSerializer(serializers.ModelSerializer):
-
-    class Meta: 
-
-        model = Product
-        fields= '__all__'
-
-        read_only_fields = ['id', 'vendor', 'sold_count', 'is_active', 'created_at', 'updated_at']
-
-
-
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name','created_at']
         read_only_fields = ['id', 'created_at']
+
+
+
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    category_name = CategorySerializer(many=True, read_only=True)
+
+    
+
+    class Meta: 
+
+        model = Product
+        fields = ['name', 'category', 'description', 'price', 'stock', 'image', 'sold_count', 'created_at', 'updated_at','category_name']
+
+        read_only_fields = ['vendor', 'sold_count', 'created_at', 'updated_at']
+
+
+
+
+
 
 
 # serializers.py
