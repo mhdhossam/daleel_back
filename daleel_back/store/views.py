@@ -11,6 +11,7 @@ from rest_framework import status
 from.models import * 
 from.serializers import *
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from client.permissions import IsVendorPermission
 
@@ -23,7 +24,66 @@ class ProductListView(ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]  # No authentication required to view products
 
-    
+class VendorDashboardView(APIView):
+    """
+    Dashboard for vendors to manage their products.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsVendorPermission]
+
+    def get(self, request):
+        """
+        List all products owned by the vendor.
+        """
+        vendor = request.user.vendor
+        products = Product.objects.filter(vendor=vendor)
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """
+        Create a new product for the vendor.
+        """
+        vendor = request.user.vendor
+        serializer = ProductCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(vendor=vendor)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+
+class ProductUpdateView(generics.UpdateAPIView):
+    """
+    API view to allow only vendors to update their products.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsVendorPermission]
+    serializer_class = ProductCreateSerializer
+    queryset = Product.objects.all()
+
+    def get_queryset(self):
+        """
+        Ensure that vendors can only update their own products.
+        """
+        user = self.request.user
+        if hasattr(user, 'vendor'):  # Check if user is a vendor
+            return Product.objects.filter(vendor=user.vendor)
+        return Product.objects.none()
+class ProductDeleteView(generics.DestroyAPIView):
+    """
+    API view to allow only vendors to delete their products.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsVendorPermission]
+    queryset = Product.objects.all()
+
+    def get_queryset(self):
+        """
+        Ensure that vendors can only delete their own products.
+        """
+        user = self.request.user
+        if hasattr(user, 'vendor'):  # Check if user is a vendor
+            return Product.objects.filter(vendor=user.vendor)
+        return Product.objects.none()
 
 
 

@@ -76,6 +76,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         return response
 
 
+
 class LogoutView(APIView):
     """
     Logout view to blacklist refresh token and clear cookies.
