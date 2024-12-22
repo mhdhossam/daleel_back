@@ -12,6 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
+#instapay 
 # INSTAPAY_API_KEY = config('SECRET_KEY')
 # INSTAPAY_SECRET_KEY = config('SECRET_KEY')
 # INSTAPAY_BASE_URL = config('SECRET_KEY')
