@@ -15,14 +15,14 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
-    category_name = CategorySerializer(many=True, read_only=True)
+
 
     
 
     class Meta: 
 
         model = Product
-        fields = ['name', 'category', 'description', 'price', 'stock', 'image', 'sold_count', 'created_at', 'updated_at','category_name']
+        fields = ['name', 'category', 'description', 'price', 'stock', 'image', 'sold_count', 'created_at', 'updated_at']
 
         read_only_fields = ['vendor', 'sold_count', 'created_at', 'updated_at']
 

@@ -14,15 +14,21 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from client.permissions import IsVendorPermission
+from rest_framework.filters import OrderingFilter, SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class ProductListView(ListAPIView):
     """
-    API view to retrieve a list of all products sorted by best-selling.
+    API view to retrieve a list of all products sorted by best-selling with filters and pagination.
     """
-    queryset=Product.objects.all().order_by('-sold_count')
+    queryset = Product.objects.all().order_by('-sold_count')
     serializer_class = ProductSerializer
-    permission_classes = [AllowAny]  # No authentication required to view products
+    permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['category', 'price']
+    search_fields = ['name', 'description']
+    ordering_fields = ['sold_count', 'price', 'name'] # No authentication required to view products
 
 class VendorDashboardView(APIView):
     """
@@ -68,6 +74,7 @@ class ProductUpdateView(generics.UpdateAPIView):
         if hasattr(user, 'vendor'):  # Check if user is a vendor
             return Product.objects.filter(vendor=user.vendor)
         return Product.objects.none()
+    
 class ProductDeleteView(generics.DestroyAPIView):
     """
     API view to allow only vendors to delete their products.
