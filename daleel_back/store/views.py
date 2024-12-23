@@ -203,3 +203,27 @@ class ViewCartView(RetrieveAPIView):
             raise serializers.ValidationError("No active cart found.")
         return cart
     
+
+
+
+
+class AddToFavoritesView(APIView):
+    """
+    API view to add a product to the user's favorites.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, product_id):
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
+
+        if not created:
+            return Response({"message": "Product is already in favorites."}, status=status.HTTP_200_OK)
+
+        return Response({"message": "Product added to favorites."}, status=status.HTTP_201_CREATED)
+    

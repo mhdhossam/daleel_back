@@ -41,6 +41,24 @@ class Product(models.Model):
         return self.stock > 0
     
 
+class Favorite(models.Model):
+    """
+    Model to represent a user's favorite products.
+    """
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='favorites')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='favorited_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('customer', 'product')
+
+
+
+
+
+
+
+
 
 class Category(models.Model):
 
