@@ -71,8 +71,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         )
 
         # Remove tokens from response body
-        del response.data['refresh']
-        del response.data['access']
+        # del response.data['refresh']
+        # del response.data['access']
         return response
 
 
@@ -81,7 +81,8 @@ class LogoutView(APIView):
     """
     Logout view to blacklist refresh token and clear cookies.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes=[IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def post(self, request):
         try:
