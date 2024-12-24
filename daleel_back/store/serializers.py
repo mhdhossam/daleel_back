@@ -2,8 +2,6 @@ from .models import *
 from rest_framework import serializers
 
 
-
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -11,20 +9,11 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 
-
-
-
 class ProductSerializer(serializers.ModelSerializer):
-
-
-    
-
     class Meta: 
-
         model = Product
-        fields = ['name', 'category', 'description', 'price', 'stock', 'image', 'sold_count', 'created_at', 'updated_at']
-
-        read_only_fields = ['vendor', 'sold_count', 'created_at', 'updated_at']
+        fields = ['title', 'category', 'description', 'price',  'image', 'sold_count', 'created_at']
+        read_only_fields = ['vendor', 'sold_count', 'created_at']
 
 
 
@@ -34,7 +23,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Product
-        fields = ['name', 'description', 'price','stock','image','category']  # Replace with relevant fields
+        fields = ['title', 'description', 'price','stock','image','category']  # Replace with relevant fields
 
 
         
@@ -53,14 +42,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'description', 'price', 'stock', 'is_in_stock', 
+            'id', 'title', 'description', 'price', 'stock', 'is_in_stock', 
             'image', 'vendor_name', 'categories', 'total_sold', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'vendor_name', 'categories', 'total_sold', 'created_at', 'updated_at']
 
     def get_is_in_stock(self, obj):
         return obj.is_in_stock()
-
 
 
 

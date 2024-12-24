@@ -1,44 +1,97 @@
 from django.db import models
 from client.models import Vendor,Customer # For Vendor/User association
+from django.utils.translation import gettext_lazy as _
 
 
-class Product(models.Model):
-    name = models.CharField(max_length=255,)
-    category= models.ManyToManyField('Category' ,related_name='products')
-    description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    stock = models.PositiveIntegerField(default=0)  # Quantity in stock
-    image = models.ImageField(upload_to='products/', null=True, blank=True)
+# class Product(models.Model):
+#     name = models.CharField(max_length=255,)
+#     category= models.ManyToManyField('Category' ,related_name='products')
+#     description = models.TextField()
+#     price = models.DecimalField(max_digits=10, decimal_places=2)
+#     stock = models.PositiveIntegerField(default=0)  # Quantity in stock
+#     image = models.ImageField(upload_to='products/', null=True, blank=True)
 
     
+#     vendor = models.ForeignKey(
+#         Vendor, 
+#         on_delete=models.CASCADE, 
+#         related_name='products', 
+#         help_text="The vendor who owns this product"
+#     )
+
+  
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+
+#     # For best-selling logic
+#     sold_count = models.PositiveIntegerField(default=0)  # Number of products sold
+
+
+   
+
+#     class Meta:
+#         ordering = ['-sold_count', 'name']  # Default ordering by best-sellers and then name
+#         verbose_name = 'Product'
+#         verbose_name_plural = 'Products'
+
+#     def __str__(self):
+#         return self.name
+
+#     def is_in_stock(self):
+        
+#         return self.stock > 0
+    
+class Category(models.Model):
+
+
+    name = models.CharField(max_length=255,)
+
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, related_name="subcategories", null=True, blank=True
+    )  # Supports subcategories
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+    
+def get_category_choices():
+    """Retrieve all categories as choices for the Product model."""
+    try:
+        return [(category.name.lower(), category.name) for category in Category.objects.all()]
+    except:
+        return [] 
+
+class Product(models.Model):
+    CATEGORY_CHOICES = get_category_choices()
+
+    title = models.CharField(max_length=255)
     vendor = models.ForeignKey(
         Vendor, 
         on_delete=models.CASCADE, 
         related_name='products', 
         help_text="The vendor who owns this product"
     )
-
-  
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
+    image = models.ImageField(upload_to='products/', null=True, blank=True)
+    sold_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # For best-selling logic
-    sold_count = models.PositiveIntegerField(default=0)  # Number of products sold
-
-
-   
-
-    class Meta:
-        ordering = ['-sold_count', 'name']  # Default ordering by best-sellers and then name
-        verbose_name = 'Product'
-        verbose_name_plural = 'Products'
-
     def __str__(self):
-        return self.name
+        return self.title
+    def is_in_stock(self):       
+     return self.stock > 0
+    
 
-    def is_in_stock(self):
-        
-        return self.stock > 0
     
 
 class Favorite(models.Model):
@@ -60,25 +113,7 @@ class Favorite(models.Model):
 
 
 
-class Category(models.Model):
 
-
-    name = models.CharField(max_length=255,)
-
-    parent = models.ForeignKey(
-        'self', on_delete=models.CASCADE, related_name="subcategories", null=True, blank=True
-    )  # Supports subcategories
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'Category'
-        verbose_name_plural = 'Categories'
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
 
 
 

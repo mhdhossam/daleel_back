@@ -1,16 +1,19 @@
 from django.contrib import admin
 from .models import * 
 
-# Register your models here.
-
 @admin.register(Product)
-
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'price', 'stock','vendor', 'sold_count']
-    list_filter = [ 'vendor']
-    search_fields = ['name', 'description']
+    list_display = ['title', 'vendor', 'category', 'price', 'sold_count', 'created_at']
+    list_filter = ['vendor', 'category']
 
-
+    def formfield_for_choice_field(self, db_field, request, **kwargs):
+        if db_field.name == "category":
+            kwargs['choices'] = get_category_choices()
+        return super().formfield_for_choice_field(db_field, request, **kwargs)
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ['name', 'parent', 'created_at']
+    search_fields = ['name']
 
 
 @admin.register(Order)
@@ -26,4 +29,3 @@ class OrderItemAdmin(admin.ModelAdmin):
     list_display = ['order', 'product', 'quantity', 'price']
     search_fields = ['order__id', 'product__name']
 
-admin.site.register(Category)

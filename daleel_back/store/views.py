@@ -18,17 +18,26 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
 
+class CategoryListView(APIView):
+    """
+    API view to retrieve all categories as choices.
+    """
+    def get(self, request):
+        categories = Category.objects.all()
+        serialized_categories = CategorySerializer(categories, many=True).data
+        # Format categories as choices
+        choices = [{'value': category['id'], 'label': category['name']} for category in serialized_categories]
+        return Response(choices)
 class ProductListView(ListAPIView):
     """
-    API view to retrieve a list of all products sorted by best-selling with filters and pagination.
+    API view to retrieve a list of all products with filters, search, and pagination.
     """
-    queryset = Product.objects.all().order_by('-sold_count')
+    queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['category', 'price']
-    search_fields = ['name', 'description']
-    ordering_fields = ['sold_count', 'price', 'name'] # No authentication required to view products
+    filterset_fields = ['id','category']
+    search_fields = ['title', 'description']
+    ordering_fields = ['price', 'sold_count', 'title']
 
 class VendorDashboardView(APIView):
     """
