@@ -18,7 +18,7 @@ urlpatterns = [
 
     path('api/categories/', CategoryListView.as_view(), name='category-list'),
     path('api/products/', ProductListView.as_view(), name='product-list'),
-    path('api/store/product/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
+    path('api/products/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
     path('api/store/product/create/', ProductCreateView.as_view(), name='product-create'),
     path('api/store/product/update/<int:pk>/', ProductUpdateView.as_view(), name='product-update'),
     path('api/store/product/delete/<int:pk>/', ProductDeleteView.as_view(), name='product-delete'),

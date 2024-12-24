@@ -105,10 +105,30 @@ class ProductDeleteView(generics.DestroyAPIView):
 
 
 class ProductDetailView(RetrieveAPIView):
-    queryset = Product.objects.prefetch_related('category').select_related('vendor')
+    """
+    API view to retrieve a single product by its ID using RetrieveAPIView.
+    """
     serializer_class = ProductDetailSerializer
-    permission_classes = [AllowAny]
-    lookup_field = 'id'  # Use 'slug' if products have slugs
+
+    def get_object(self):
+        """
+        Retrieve the product instance by its ID.
+        """
+        product_id = self.kwargs.get("id")  # Get the 'id' from the URL
+        try:
+            return Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return None
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Handle the GET request for product details.
+        """
+        product = self.get_object()
+        if not product:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(product)
+        return Response(serializer.data)
 
 
 
