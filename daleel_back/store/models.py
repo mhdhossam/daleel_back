@@ -2,45 +2,6 @@ from django.db import models
 from client.models import Vendor,Customer # For Vendor/User association
 from django.utils.translation import gettext_lazy as _
 
-
-# class Product(models.Model):
-#     name = models.CharField(max_length=255,)
-#     category= models.ManyToManyField('Category' ,related_name='products')
-#     description = models.TextField()
-#     price = models.DecimalField(max_digits=10, decimal_places=2)
-#     stock = models.PositiveIntegerField(default=0)  # Quantity in stock
-#     image = models.ImageField(upload_to='products/', null=True, blank=True)
-
-    
-#     vendor = models.ForeignKey(
-#         Vendor, 
-#         on_delete=models.CASCADE, 
-#         related_name='products', 
-#         help_text="The vendor who owns this product"
-#     )
-
-  
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     # For best-selling logic
-#     sold_count = models.PositiveIntegerField(default=0)  # Number of products sold
-
-
-   
-
-#     class Meta:
-#         ordering = ['-sold_count', 'name']  # Default ordering by best-sellers and then name
-#         verbose_name = 'Product'
-#         verbose_name_plural = 'Products'
-
-#     def __str__(self):
-#         return self.name
-
-#     def is_in_stock(self):
-        
-#         return self.stock > 0
-    
 class Category(models.Model):
 
 
