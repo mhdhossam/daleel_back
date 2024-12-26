@@ -51,23 +51,19 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return obj.is_in_stock()
 
 
-
 class OrderItemSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the OrderItem model, which represents individual products
-    in the order.
-    """
     vendor_name = serializers.CharField(source='product.vendor.username', read_only=True)
-    product_name = serializers.CharField(source='product.name', read_only=True)
-    product_price = serializers.DecimalField(source='product.price', read_only=True , max_digits=6 , decimal_places=2,)
-    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)  # Read-only field
+    product_name = serializers.CharField(source='product.title', read_only=True)
+    product_price = serializers.DecimalField(source='product.price', read_only=True, max_digits=6, decimal_places=2)
+    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'product_name', 'vendor_name' ,'quantity', 'price', 'product_price', 'total_price']
-        
+        fields = ['id', 'product', 'product_name', 'vendor_name', 'quantity', 'price', 'product_price', 'total_price']
+
     def get_total_price(self, obj):
         return obj.quantity * obj.price
+
 
 
 

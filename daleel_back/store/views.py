@@ -17,6 +17,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from client.permissions import IsVendorPermission
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import ValidationError
+from decimal import Decimal
 
 
 class CategoryListView(APIView):
@@ -146,123 +148,98 @@ class ProductCreateView(CreateAPIView):
         serializer.save(created_by=self.request.user) 
 
 
-
-
-
-class AddToCartView(CreateAPIView):
-    """
-    Add a product to the cart. If a cart doesn't exist, it creates one.
-    If the product is already in the cart, it updates the quantity.
-    """
-    permission_classes = [IsAuthenticated]
+class AddToCartView(APIView):
     authentication_classes = [JWTAuthentication]
-    serializer_class = OrderItemSerializer
+    permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        user = self.request.user
-        product_id = self.request.data.get('product_id')
-        quantity = int(self.request.data.get('quantity', 1))
+    def post(self, request):
+        user = request.user
+        product_id = request.data.get("product_id")
+        quantity = request.data.get("quantity", 1)
+
+        if not product_id:
+            return Response({"error": "Product ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             product = Product.objects.get(pk=product_id)
         except Product.DoesNotExist:
-            raise serializers.ValidationError("Product not found.")
+            return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Get or create cart
-        cart = Order.get_cart(user)
-        if not cart:
-            cart = Order.objects.create(user=user, status='CART')
+        # Retrieve or create cart
+        cart, created = Order.objects.get_or_create(user=user, status='CART')
 
-        # Check if product already exists in the cart
+        # Retrieve or create order item
         order_item, created = OrderItem.objects.get_or_create(
-            order=cart,
-            product=product,
+            order=cart, product=product,
             defaults={'quantity': quantity, 'price': product.price}
         )
 
         if not created:
-            # Update the quantity if the item already exists
-            order_item.quantity += quantity
+            order_item.quantity += int(quantity)
             order_item.save()
 
         cart.calculate_total_price()
 
-        return order_item
+        return Response(OrderSerializer(cart).data, status=status.HTTP_200_OK)
 
-
-class RemoveFromCartView(DestroyAPIView):
-    """
-    Remove a product from the cart.
-    """
-    permission_classes = [IsAuthenticated]
+class RemoveFromCartView(APIView):
     authentication_classes = [JWTAuthentication]
-    queryset = OrderItem.objects.all()
-    serializer_class = OrderItemSerializer
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        # Filter order items by the user's active cart
-        user = self.request.user
-        cart = Order.get_cart(user)
-        if cart:
-            return cart.order_items.all()
-        return OrderItem.objects.none()
+    def delete(self, request, pk):
+        user = request.user
+        try:
+            cart = Order.objects.get(user=user, status='CART')
+            order_item = cart.order_items.get(pk=pk)
+        except (Order.DoesNotExist, OrderItem.DoesNotExist):
+            return Response({"error": "Item not found in cart."}, status=status.HTTP_404_NOT_FOUND)
 
-    def destroy(self, request, *args, **kwargs):
-        # Perform the deletion and recalculate total price
-        instance = self.get_object()
-        cart = instance.order
-        self.perform_destroy(instance)
+        order_item.delete()
         cart.calculate_total_price()
 
-        return Response({"message": "Product removed from cart.", "total_price": cart.total_price})
+        return Response({"message": "Item removed from cart."}, status=status.HTTP_200_OK)
 
 
 
-
-class UpdateCartView(UpdateAPIView):
-    """
-    Update the quantity of a product in the cart.
-    """
-    permission_classes = [IsAuthenticated]
+class UpdateCartView(APIView):
     authentication_classes = [JWTAuthentication]
-    serializer_class = OrderItemSerializer
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        user = self.request.user
-        cart = Order.get_cart(user)
-        if not cart:
-            raise serializers.ValidationError("No active cart found.")
-        return OrderItem.objects.filter(order=cart)
-
-    def perform_update(self, serializer):
-        quantity = int(self.request.data.get('quantity', 1))
+    def patch(self, request):
+        user = request.user
+        product_id = request.data.get("product_id")
+        quantity = int(request.data.get("quantity", 1))
 
         if quantity <= 0:
-            serializer.instance.delete()
-        else:
-            serializer.save(quantity=quantity)
+            return Response({"error": "Quantity must be greater than 0."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Recalculate cart total price
-        cart = serializer.instance.order
+        try:
+            cart = Order.objects.get(user=user, status='CART')
+            order_item = cart.order_items.get(product_id=product_id)
+        except (Order.DoesNotExist, OrderItem.DoesNotExist):
+            return Response({"error": "Item not found in cart."}, status=status.HTTP_404_NOT_FOUND)
+
+        order_item.quantity = quantity
+        order_item.save()
         cart.calculate_total_price()
 
+        return Response({"message": "Quantity updated."}, status=status.HTTP_200_OK)
 
 
-class ViewCartView(RetrieveAPIView):
-    """
-    View the contents of the cart.
-    """
-    permission_classes=[IsAuthenticated]
+
+
+class ViewCartView(APIView):
     authentication_classes = [JWTAuthentication]
-    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
 
-    def get_object(self):
-        user = self.request.user
-        cart = Order.get_cart(user)
+    def get(self, request):
+        user = request.user
+        cart = Order.objects.filter(user=user, status='CART').first()
         if not cart:
-            raise serializers.ValidationError("No active cart found.")
-        return cart
-    
+            return Response({"error": "Cart is empty."}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(OrderSerializer(cart).data, status=status.HTTP_200_OK)
+
 
 
 

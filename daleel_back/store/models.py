@@ -68,23 +68,6 @@ class Favorite(models.Model):
         unique_together = ('customer', 'product')
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class Order(models.Model):
     # Order statuses
     ORDER_STATUS_CHOICES = [
@@ -141,7 +124,7 @@ class Order(models.Model):
         self.save()
     @classmethod
     def get_cart(cls, user):
-        return cls.objects.filter(user=user, status='CART').first()
+        return cls.objects.filter(user=user.customer, status='CART').first()
 
 
 
@@ -169,7 +152,7 @@ class OrderItem(models.Model):
         verbose_name_plural = 'Order Items'
 
     def __str__(self):
-        return f"{self.quantity} x {self.product.name}"
+        return self.product.title
 
     def get_total_price(self):
         return self.quantity * self.price
