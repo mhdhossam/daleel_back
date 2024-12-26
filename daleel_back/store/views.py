@@ -2,6 +2,7 @@ from rest_framework.generics import (
     RetrieveAPIView,
     ListAPIView,
     CreateAPIView,
+    UpdateAPIView,
     DestroyAPIView,
     
 )
@@ -214,7 +215,37 @@ class RemoveFromCartView(DestroyAPIView):
         cart.calculate_total_price()
 
         return Response({"message": "Product removed from cart.", "total_price": cart.total_price})
-   
+
+
+
+
+class UpdateCartView(UpdateAPIView):
+    """
+    Update the quantity of a product in the cart.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    serializer_class = OrderItemSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        cart = Order.get_cart(user)
+        if not cart:
+            raise serializers.ValidationError("No active cart found.")
+        return OrderItem.objects.filter(order=cart)
+
+    def perform_update(self, serializer):
+        quantity = int(self.request.data.get('quantity', 1))
+
+        if quantity <= 0:
+            serializer.instance.delete()
+        else:
+            serializer.save(quantity=quantity)
+
+        # Recalculate cart total price
+        cart = serializer.instance.order
+        cart.calculate_total_price()
+
 
 
 class ViewCartView(RetrieveAPIView):

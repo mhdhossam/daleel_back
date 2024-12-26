@@ -25,7 +25,8 @@ urlpatterns = [
     path('api/vendor/dashboard/', VendorDashboardView.as_view(), name='vendor-dashboard'),
     path('api/store/createorder', AddToCartView.as_view(), name='add-to-cart'),
     path('api/cart/remove/<int:pk>/', RemoveFromCartView.as_view(), name='remove-from-cart'),
-    path('api/store/vieworder', ViewCartView.as_view(), name='view-order'),
+    path('api/cart/update/', ViewCartView.as_view(), name='view-cart'),
+    path('api/cart/vieworder', ViewCartView.as_view(), name='view-order'),
     path('api/favorites/add/<int:product_id>/', AddToFavoritesView.as_view(), name='add-to-favorites'),
 
     #payment
