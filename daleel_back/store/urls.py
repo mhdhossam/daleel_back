@@ -28,7 +28,7 @@ urlpatterns = [
 
     path('api/cart/add/', AddToCartView.as_view(), name='add-to-cart'),
     path('api/cart/remove/<int:pk>/', RemoveFromCartView.as_view(), name='remove-from-cart'),
-    path('api/cart/update/', UpdateCartView.as_view(), name='update-cart'),
+    path('api/cart/update/<int:pk>/', UpdateCartView.as_view(), name='update-cart'),
     path('api/cart/view/', ViewCartView.as_view(), name='view-cart'),
 
     path('api/favorites/add/<int:product_id>/', AddToFavoritesView.as_view(), name='add-to-favorites'),

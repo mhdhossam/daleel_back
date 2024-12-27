@@ -201,29 +201,75 @@ class RemoveFromCartView(APIView):
 
 
 
-class UpdateCartView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+# class UpdateCartView(APIView):
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
 
-    def patch(self, request):
-        user = request.user
-        product_id = request.data.get("product_id")
-        quantity = int(request.data.get("quantity", 1))
+#     def patch(self, request):
+#         user = request.user
+#         product_id = request.data.get("product_id")
+#         quantity = int(request.data.get("quantity", 1))
+
+#         if quantity <= 0:
+#             return Response({"error": "Quantity must be greater than 0."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         try:
+#             cart = Order.objects.get(user=user, status='CART')
+#             order_item = cart.order_items.get(product_id=product_id)
+#         except (Order.DoesNotExist, OrderItem.DoesNotExist):
+#             return Response({"error": "Item not found in cart."}, status=status.HTTP_404_NOT_FOUND)
+
+#         order_item.quantity = quantity
+#         order_item.save()
+#         cart.calculate_total_price()
+
+#         return Response({"message": "Quantity updated."}, status=status.HTTP_200_OK)
+
+
+
+
+class UpdateCartView(UpdateAPIView):
+    """
+    Update the quantity of a product in the cart using the PATCH method.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    serializer_class = OrderItemSerializer
+
+    def get_queryset(self):
+        """
+        Return the queryset for the items in the user's cart.
+        Raise an error if no cart or item is found.
+        """
+        user = self.request.user
+        cart = Order.get_cart(user)
+        if not cart:
+            raise serializers.ValidationError("No active cart found.")
+        return OrderItem.objects.filter(order=cart)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Handle partial updates for OrderItem.
+        """
+        instance = self.get_object()
+        quantity = int(request.data.get('quantity', 1))
 
         if quantity <= 0:
-            return Response({"error": "Quantity must be greater than 0."}, status=status.HTTP_400_BAD_REQUEST)
+            instance.delete()
+        else:
+            instance.quantity = quantity
+            instance.save()
 
-        try:
-            cart = Order.objects.get(user=user, status='CART')
-            order_item = cart.order_items.get(product_id=product_id)
-        except (Order.DoesNotExist, OrderItem.DoesNotExist):
-            return Response({"error": "Item not found in cart."}, status=status.HTTP_404_NOT_FOUND)
-
-        order_item.quantity = quantity
-        order_item.save()
+        # Recalculate cart total price
+        cart = instance.order
         cart.calculate_total_price()
 
-        return Response({"message": "Quantity updated."}, status=status.HTTP_200_OK)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+
+
+
 
 
 
