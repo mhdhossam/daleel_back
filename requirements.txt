@@ -6,3 +6,4 @@ django-filter
 djangorestframework
 pillow
 python-decouple
+whitenoise
