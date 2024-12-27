@@ -21,9 +21,9 @@ SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['daleelback-production.up.railway.app','127.0.0.1','localhost:5173']
 
-CORS_ALLOWED_ORIGINS = ['http://*']
+
 CORS_ALLOW_ALL_ORIGINS = True 
 CORS_ALLOW_CREDENTIALS = True  
 CORS_ALLOW_METHODS = [
@@ -34,7 +34,12 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://daleelback-production.up.railway.app',
+    'http://daleelback-production.up.railway.app',
+    'https://localhost:5173',
+    'http://localhost:5173',
+]
 # Application definition
 
 INSTALLED_APPS = [
