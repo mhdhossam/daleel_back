@@ -1,5 +1,5 @@
 Django
-djangorestframework_simplejwt1
+djangorestframework_simplejwt
 python-dotenv
 django-cors-headers
 django-filter
