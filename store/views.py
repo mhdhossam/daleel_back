@@ -318,7 +318,7 @@ class WishlistView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        wishlist_items = Favorite.objects.filter(customer=request.user)
+        wishlist_items = Favorite.objects.filter(user=request.user)
         products = [favorite.product for favorite in wishlist_items]
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data, status=200)
@@ -327,17 +327,21 @@ class AddToWishlistView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, product_id):
-        try:
-            product = Product.objects.get(id=product_id)
-        except Product.DoesNotExist:
-            return Response({"error": "Product not found."}, status=404)
-
-        # Check if already in wishlist
+     try:
+        product = Product.objects.get(id=product_id)
+        print(f"Product fetched: {product}")
+        
         favorite, created = Favorite.objects.get_or_create(customer=request.user, product=product)
+        print(f"Favorite entry: {favorite}, Created: {created}")
+        
         if not created:
             return Response({"message": "Product is already in your wishlist."}, status=200)
 
         return Response({"message": "Product added to wishlist."}, status=201)
+     except Exception as e:
+        print(f"Unexpected error: {e}")
+        return Response({"error": "Internal server error."}, status=500)
+
 
 
 class RemoveFromWishlistView(DestroyAPIView):
