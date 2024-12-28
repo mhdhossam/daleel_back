@@ -33,9 +33,9 @@ urlpatterns = [
     path('api/cart/update/<int:pk>/', UpdateCartView.as_view(), name='update-cart'),
     path('api/cart/view/', ViewCartView.as_view(), name='view-cart'),
 
-    path('favorites/view/', WishlistView.as_view(), name='view-wishlist'),
-    path('favorites/add/<int:product_id>/', AddToWishlistView.as_view(), name='add-to-wishlist'),
-    path('favorites/remove/<int:product_id>/', RemoveFromWishlistView.as_view(), name='remove-from-wishlist'),
+    path('api/favorites/view/', WishlistView.as_view(), name='view-wishlist'),
+    path('api/favorites/add/<int:product_id>/', AddToWishlistView.as_view(), name='add-to-wishlist'),
+    path('api/favorites/remove/<int:product_id>/', RemoveFromWishlistView.as_view(), name='remove-from-wishlist'),
 
     #payment
     # path('api/payment/create/', CreateInstaPayView.as_view(), name='payment-create'),
