@@ -31,7 +31,7 @@ urlpatterns = [
     path('api/cart/update/<int:pk>/', UpdateCartView.as_view(), name='update-cart'),
     path('api/cart/view/', ViewCartView.as_view(), name='view-cart'),
 
-    path('api/favorites/add/<int:product_id>/', AddToFavoritesView.as_view(), name='add-to-favorites'),
+    path('api/favorites/add/<int:pk>/', AddToFavoritesView.as_view(), name='add-to-favorites'),
 
     #payment
     # path('api/payment/create/', CreateInstaPayView.as_view(), name='payment-create'),
