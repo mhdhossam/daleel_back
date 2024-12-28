@@ -310,11 +310,8 @@ class ViewCartView(APIView):
 
 #         return Response({"message": "Product added to favorites."}, status=status.HTTP_201_CREATED)
     
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from products.serializers import ProductSerializer  # Serializer for Product
+
+  # Serializer for Product
 
 class WishlistView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -341,7 +338,7 @@ class AddToWishlistView(APIView):
             return Response({"message": "Product is already in your wishlist."}, status=200)
 
         return Response({"message": "Product added to wishlist."}, status=201)
-from rest_framework.generics import DestroyAPIView
+
 
 class RemoveFromWishlistView(DestroyAPIView):
     authentication_classes = [JWTAuthentication]
