@@ -65,6 +65,9 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     def get_total_price(self, obj):
         return obj.quantity * obj.price
+    def get_product_image(self, obj):
+        # Fetch the product image URL
+        return obj.product.image.url if obj.product and obj.product.image else None
 
 
 
