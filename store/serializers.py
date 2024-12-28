@@ -55,6 +55,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
     vendor_name = serializers.CharField(source='product.vendor.username', read_only=True)
     product_name = serializers.CharField(source='product.title', read_only=True)
     product_price = serializers.DecimalField(source='product.price', read_only=True, max_digits=6, decimal_places=2)
+    product_image = serializers.SerializerMethodField(source='product.image')
+    product_category = serializers.StringRelatedField(source='product.category')
     total_price = serializers.SerializerMethodField()
 
     class Meta:
