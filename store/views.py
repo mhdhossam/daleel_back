@@ -327,20 +327,24 @@ class AddToWishlistView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, product_id):
-     try:
-        product = Product.objects.get(id=product_id)
-        print(f"Product fetched: {product}")
-        
-        favorite, created = Favorite.objects.get_or_create(customer=request.user, product=product)
-        print(f"Favorite entry: {favorite}, Created: {created}")
-        
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return Response({"error": "Product not found."}, status=404)
+
+        try:
+            # Fetch the corresponding Customer instance
+            customer = Customer.objects.get(id=request.user.id)
+        except Customer.DoesNotExist:
+            return Response({"error": "Customer profile not found."}, status=404)
+
+        # Create or get the favorite entry
+        favorite, created = Favorite.objects.get_or_create(customer=customer, product=product)
+
         if not created:
             return Response({"message": "Product is already in your wishlist."}, status=200)
 
         return Response({"message": "Product added to wishlist."}, status=201)
-     except Exception as e:
-        print(f"Unexpected error: {e}")
-        return Response({"error": "Internal server error."}, status=500)
 
 
 
