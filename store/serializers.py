@@ -61,7 +61,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'product_name', 'vendor_name', 'quantity', 'price', 'product_price', 'total_price']
+        fields = ['id', 'product', 'product_name','product_image', 'vendor_name','product_category', 'quantity', 'price', 'product_price', 'total_price']
 
     def get_total_price(self, obj):
         return obj.quantity * obj.price
