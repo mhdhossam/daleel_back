@@ -318,7 +318,8 @@ class WishlistView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        wishlist_items = Favorite.objects.filter(user=request.user)
+        customer = Customer.objects.get(id=request.user.id)
+        wishlist_items = Favorite.objects.filter(customer=customer)
         products = [favorite.product for favorite in wishlist_items]
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data, status=200)
