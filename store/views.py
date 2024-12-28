@@ -290,20 +290,47 @@ class ViewCartView(APIView):
 
 
 
+# class AddToFavoritesView(APIView):
+#     """
+#     API view to add a product to the user's favorites.
+#     """
+#     authentication_classes = [JWTAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         try:
+#             product = Product.objects.get(id=pk)
+#         except Product.DoesNotExist:
+#             return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
+
+#         favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
+
+#         if not created:
+#             return Response({"message": "Product is already in favorites."}, status=status.HTTP_200_OK)
+
+#         return Response({"message": "Product added to favorites."}, status=status.HTTP_201_CREATED)
+    
 class AddToFavoritesView(APIView):
-    """
-    API view to add a product to the user's favorites.
-    """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, pk):
+    def post(self, request):
+        user = request.user
+        product_id = request.data.get("product_id")
+        quantity = request.data.get("quantity", 1)
+
+        if not product_id:
+            return Response({"error": "Product ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            product = Product.objects.get(id=pk)
+            product = Product.objects.get(pk=product_id)
         except Product.DoesNotExist:
             return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        # Retrieve or create cart
         favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
+
+        # Retrieve or create order ite
 
         if not created:
             return Response({"message": "Product is already in favorites."}, status=status.HTTP_200_OK)
