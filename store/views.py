@@ -310,30 +310,47 @@ class ViewCartView(APIView):
 
 #         return Response({"message": "Product added to favorites."}, status=status.HTTP_201_CREATED)
     
-class AddToFavoritesView(APIView):
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from products.serializers import ProductSerializer  # Serializer for Product
+
+class WishlistView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
-        user = request.user
-        product_id = request.data.get("product_id")
-        quantity = request.data.get("quantity", 1)
+    def get(self, request):
+        wishlist_items = Favorite.objects.filter(customer=request.user)
+        products = [favorite.product for favorite in wishlist_items]
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data, status=200)
+class AddToWishlistView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
-        if not product_id:
-            return Response({"error": "Product ID is required."}, status=status.HTTP_400_BAD_REQUEST)
-
+    def post(self, request, product_id):
         try:
-            product = Product.objects.get(pk=product_id)
+            product = Product.objects.get(id=product_id)
         except Product.DoesNotExist:
-            return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Product not found."}, status=404)
 
-        # Retrieve or create cart
-        favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
-
-        # Retrieve or create order ite
-
+        # Check if already in wishlist
+        favorite, created = Favorite.objects.get_or_create(customer=request.user, product=product)
         if not created:
-            return Response({"message": "Product is already in favorites."}, status=status.HTTP_200_OK)
+            return Response({"message": "Product is already in your wishlist."}, status=200)
 
-        return Response({"message": "Product added to favorites."}, status=status.HTTP_201_CREATED)
-    
+        return Response({"message": "Product added to wishlist."}, status=201)
+from rest_framework.generics import DestroyAPIView
+
+class RemoveFromWishlistView(DestroyAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, product_id):
+        try:
+            favorite = Favorite.objects.get(customer=request.user, product_id=product_id)
+            favorite.delete()
+            return Response({"message": "Product removed from wishlist."}, status=200)
+        except Favorite.DoesNotExist:
+            return Response({"error": "Product not in your wishlist."}, status=404)
