@@ -70,14 +70,7 @@ class VendorDashboardView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError, PermissionDenied
-from .models import Product
-from .serializers import ProductCreateSerializer
-from client.permissions import IsVendorPermission
+
 
 class ProductUpdateView(generics.UpdateAPIView):
     """
@@ -100,31 +93,48 @@ class ProductUpdateView(generics.UpdateAPIView):
         """
         Handle the update request and provide meaningful responses.
         """
-        product = self.get_object()  # Retrieve the specific product instance
+        product = self.get_object()
         if not product:
-            return Response({"error": "Product not found or unauthorized access."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Product not found or unauthorized access."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         if product.vendor != request.user.vendor:
             raise PermissionDenied("You do not have permission to edit this product.")
 
-        partial = kwargs.pop('partial', False)  # Allow partial updates
+        partial = kwargs.pop("partial", False)  # Allow partial updates
         serializer = self.get_serializer(product, data=request.data, partial=partial)
 
         try:
             serializer.is_valid(raise_exception=True)
         except ValidationError as e:
-            # Log validation errors
-            print(f"Validation Errors: {e.detail}")
+            print(f"Validation Errors: {e.detail}")  # Log validation errors
             return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_update(serializer)
 
-        return Response({"message": "Product updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "Product updated successfully!", "data": serializer.data},
+            status=status.HTTP_200_OK,
+        )
 
     def perform_update(self, serializer):
         """
-        Save the updated product data and handle additional logic if necessary.
+        Save the updated product data and handle file or URL logic for the image.
         """
+        instance = serializer.instance
+        image = serializer.validated_data.get("image", None)
+
+        if image:
+            if isinstance(image, str):
+                # If the image is a URL, save it directly
+                instance.image = image
+            elif hasattr(image, "file"):
+                # If the image is an uploaded file, save it
+                instance.image = image
+
+        # Save other fields
         serializer.save()
 
     
