@@ -7,3 +7,4 @@ djangorestframework
 pillow
 python-decouple
 whitenoise
+requests
