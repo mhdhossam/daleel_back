@@ -17,7 +17,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from client.permissions import IsVendorPermission
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError,PermissionDenied
 from decimal import Decimal
 
 
@@ -31,6 +31,7 @@ class CategoryListView(APIView):
         # Format categories as choices
         choices = [{'value': category['id'], 'label': category['name']} for category in serialized_categories]
         return Response(choices)
+    
 class ProductListView(ListAPIView):
     """
     API view to retrieve a list of all products with filters, search, and pagination.
@@ -76,16 +77,33 @@ class ProductUpdateView(generics.UpdateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsVendorPermission]
     serializer_class = ProductCreateSerializer
-    queryset = Product.objects.all()
 
     def get_queryset(self):
         """
         Ensure that vendors can only update their own products.
         """
         user = self.request.user
-        if hasattr(user, 'vendor'):  # Check if user is a vendor
+        if hasattr(user, 'vendor') and user.vendor.is_vendor:
             return Product.objects.filter(vendor=user.vendor)
         return Product.objects.none()
+
+    def update(self, request, *args, **kwargs):
+        """
+        Handle update request and provide a meaningful response.
+        """
+        product = self.get_object()
+        if not product:
+            return Response({"error": "Product not found or unauthorized access."}, status=status.HTTP_404_NOT_FOUND)
+
+        if product.vendor != request.user.vendor:
+            raise PermissionDenied("You do not have permission to edit this product.")
+
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(product, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response({"message": "Product updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
     
 class ProductDeleteView(generics.DestroyAPIView):
     """
@@ -103,9 +121,6 @@ class ProductDeleteView(generics.DestroyAPIView):
         if hasattr(user, 'vendor'):  # Check if user is a vendor
             return Product.objects.filter(vendor=user.vendor)
         return Product.objects.none()
-
-
-
 
 class ProductDetailView(RetrieveAPIView):
     """
@@ -132,9 +147,6 @@ class ProductDetailView(RetrieveAPIView):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(product)
         return Response(serializer.data)
-
-
-
 
 class ProductCreateView(CreateAPIView):
     """
@@ -199,35 +211,6 @@ class RemoveFromCartView(APIView):
 
         return Response({"message": "Item removed from cart."}, status=status.HTTP_200_OK)
 
-
-
-# class UpdateCartView(APIView):
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def patch(self, request):
-#         user = request.user
-#         product_id = request.data.get("product_id")
-#         quantity = int(request.data.get("quantity", 1))
-
-#         if quantity <= 0:
-#             return Response({"error": "Quantity must be greater than 0."}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             cart = Order.objects.get(user=user, status='CART')
-#             order_item = cart.order_items.get(product_id=product_id)
-#         except (Order.DoesNotExist, OrderItem.DoesNotExist):
-#             return Response({"error": "Item not found in cart."}, status=status.HTTP_404_NOT_FOUND)
-
-#         order_item.quantity = quantity
-#         order_item.save()
-#         cart.calculate_total_price()
-
-#         return Response({"message": "Quantity updated."}, status=status.HTTP_200_OK)
-
-
-
-
 class UpdateCartView(UpdateAPIView):
     """
     Update the quantity of a product in the cart using the PATCH method.
@@ -267,13 +250,6 @@ class UpdateCartView(UpdateAPIView):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-
-
-
-
-
-
-
 class ViewCartView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -286,33 +262,6 @@ class ViewCartView(APIView):
 
         return Response(OrderSerializer(cart).data, status=status.HTTP_200_OK)
 
-
-
-
-
-# class AddToFavoritesView(APIView):
-#     """
-#     API view to add a product to the user's favorites.
-#     """
-#     authentication_classes = [JWTAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         try:
-#             product = Product.objects.get(id=pk)
-#         except Product.DoesNotExist:
-#             return Response({"error": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
-
-#         favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
-
-#         if not created:
-#             return Response({"message": "Product is already in favorites."}, status=status.HTTP_200_OK)
-
-#         return Response({"message": "Product added to favorites."}, status=status.HTTP_201_CREATED)
-    
-
-  # Serializer for Product
-
 class WishlistView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -323,6 +272,7 @@ class WishlistView(APIView):
         products = [favorite.product for favorite in wishlist_items]
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data, status=200)
+    
 class AddToWishlistView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -346,8 +296,6 @@ class AddToWishlistView(APIView):
             return Response({"message": "Product is already in your wishlist."}, status=200)
 
         return Response({"message": "Product added to wishlist."}, status=201)
-
-
 
 class RemoveFromWishlistView(DestroyAPIView):
     authentication_classes = [JWTAuthentication]
