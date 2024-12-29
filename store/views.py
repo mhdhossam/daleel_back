@@ -70,6 +70,15 @@ class VendorDashboardView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError, PermissionDenied
+from .models import Product
+from .serializers import ProductCreateSerializer
+from client.permissions import IsVendorPermission
+
 class ProductUpdateView(generics.UpdateAPIView):
     """
     API view to allow only vendors to update their products.
@@ -89,21 +98,35 @@ class ProductUpdateView(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         """
-        Handle update request and provide a meaningful response.
+        Handle the update request and provide meaningful responses.
         """
-        product = self.get_object()
+        product = self.get_object()  # Retrieve the specific product instance
         if not product:
             return Response({"error": "Product not found or unauthorized access."}, status=status.HTTP_404_NOT_FOUND)
 
         if product.vendor != request.user.vendor:
             raise PermissionDenied("You do not have permission to edit this product.")
 
-        partial = kwargs.pop('partial', False)
+        partial = kwargs.pop('partial', False)  # Allow partial updates
         serializer = self.get_serializer(product, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError as e:
+            # Log validation errors
+            print(f"Validation Errors: {e.detail}")
+            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+
         self.perform_update(serializer)
 
         return Response({"message": "Product updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    def perform_update(self, serializer):
+        """
+        Save the updated product data and handle additional logic if necessary.
+        """
+        serializer.save()
+
     
 class ProductDeleteView(generics.DestroyAPIView):
     """
