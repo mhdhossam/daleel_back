@@ -162,4 +162,43 @@ class OrderItem(models.Model):
             self.price = self.product.price
         super().save(*args, **kwargs)
         self.order.calculate_total_price()
-    
+
+
+
+
+
+
+class Checkout(models.Model):
+    """
+    Model to represent the checkout process for an order.
+    """
+    user = models.ForeignKey(
+        Customer, 
+        on_delete=models.CASCADE,  
+        help_text="The user who placed the order"
+        related_name="checkouts"
+   )
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="checkout")
+    payment_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("PENDING", "Pending"),
+            ("PAID", "Paid"),
+            ("FAILED", "Failed"),
+        ],
+        default="PENDING",
+    )
+    payment_method = models.CharField(
+        max_length=50,
+        choices=[
+            ("INSTAPAY", "InstaPay"),
+            ("CASH", "Cash on Delivery"),
+        ],
+        default="CASH",
+    )
+    shipping_address = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Checkout for Order {self.order.id} - {self.payment_status}"

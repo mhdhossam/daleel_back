@@ -309,4 +309,84 @@ class AddToFavoritesView(APIView):
             return Response({"message": "Product is already in favorites."}, status=status.HTTP_200_OK)
 
         return Response({"message": "Product added to favorites."}, status=status.HTTP_201_CREATED)
-    
+
+
+
+
+class CheckoutView(APIView):
+    """
+    View to handle checkout process.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        serializer = CheckoutSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            user = request.user
+            cart = Order.objects.filter(user=user, status='CART').first()
+
+            if not cart:
+                return Response({"error": "Cart not found or is empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Calculate total price
+            cart.calculate_total_price()
+
+            # Process payment (dummy logic)
+            payment_method = serializer.validated_data['payment_method']
+            if payment_method == 'INSTAPAY':
+                # Assume card processing is done here
+                payment_status = True
+            elif payment_method == 'CASH':
+                payment_status = True  # Cash on delivery
+            else:
+                payment_status = False
+
+            if not payment_status:
+                return Response({"error": "Payment failed."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Update cart to order
+            cart.status = 'PAID'
+            cart.save()
+
+            return Response({
+                "message": "Checkout successful.",
+                "order_id": cart.id,
+                "total_price": cart.total_price,
+                "status": cart.status
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+class CheckoutRetrieveAPIView(RetrieveAPIView):
+    """
+    API view to retrieve the checkout details for a user's order.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = CheckoutSerializer
+
+    def get_object(self):
+        """
+        Retrieve the checkout object for the user's pending order.
+        """
+        try:
+            order = Order.objects.get(user=self.request.user, status='Pending')
+            checkout = Checkout.objects.get(order=order)
+            return checkout
+        except Order.DoesNotExist:
+            raise ValidationError("No pending order found.")
+        except Checkout.DoesNotExist:
+            raise ValidationError("Checkout details not found.")
+        
+    def get(self, request, *args, **kwargs):
+        """
+        Handles GET requests and returns the checkout details.
+        """
+        checkout = self.get_object()
+        serializer = self.get_serializer(checkout)
+        return Response(serializer.data, status=status.HTTP_200_OK)
