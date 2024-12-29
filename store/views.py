@@ -19,6 +19,8 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError,PermissionDenied
 from decimal import Decimal
+import requests
+from django.core.files.base import ContentFile
 
 
 class CategoryListView(APIView):
@@ -73,69 +75,59 @@ class VendorDashboardView(APIView):
 
 
 class ProductUpdateView(generics.UpdateAPIView):
-    """
-    API view to allow only vendors to update their products.
-    """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsVendorPermission]
     serializer_class = ProductCreateSerializer
 
     def get_queryset(self):
         """
-        Ensure that vendors can only update their own products.
+        Restrict vendors to updating only their products.
         """
         user = self.request.user
         if hasattr(user, 'vendor') and user.vendor.is_vendor:
             return Product.objects.filter(vendor=user.vendor)
         return Product.objects.none()
 
+    def fetch_image_from_url(self, url):
+        """
+        Fetch an image from a URL and return it as a ContentFile.
+        """
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an error for bad responses
+            file_name = os.path.basename(url)
+            return ContentFile(response.content, name=file_name)
+        except requests.RequestException as e:
+            raise serializers.ValidationError(f"Failed to fetch image from URL: {e}")
+
     def update(self, request, *args, **kwargs):
         """
-        Handle the update request and provide meaningful responses.
+        Handle the update request, including saving an image from a URL.
         """
         product = self.get_object()
-        if not product:
-            return Response(
-                {"error": "Product not found or unauthorized access."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        if product.vendor != request.user.vendor:
-            raise PermissionDenied("You do not have permission to edit this product.")
-
-        partial = kwargs.pop("partial", False)  # Allow partial updates
-        serializer = self.get_serializer(product, data=request.data, partial=partial)
+        serializer = self.get_serializer(product, data=request.data, partial=True)
 
         try:
             serializer.is_valid(raise_exception=True)
-        except ValidationError as e:
-            print(f"Validation Errors: {e.detail}")  # Log validation errors
+        except serializers.ValidationError as e:
             return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 
-        self.perform_update(serializer)
-
-        return Response(
-            {"message": "Product updated successfully!", "data": serializer.data},
-            status=status.HTTP_200_OK,
-        )
-
-    def perform_update(self, serializer):
-        """
-        Save the updated product data and handle file or URL logic for the image.
-        """
-        instance = serializer.instance
-        image = serializer.validated_data.get("image", None)
+        validated_data = serializer.validated_data
+        image = validated_data.get("image")
 
         if image:
-            if isinstance(image, str):
-                # If the image is a URL, save it directly
-                instance.image = image
-            elif hasattr(image, "file"):
-                # If the image is an uploaded file, save it
-                instance.image = image
+            if isinstance(image, str):  # Handle URL-based images
+                content_file = self.fetch_image_from_url(image)
+                product.image.save(content_file.name, content_file, save=True)
+            else:
+                product.image = image  # Handle file uploads
 
-        # Save other fields
-        serializer.save()
+        for attr, value in validated_data.items():
+            if attr != "image":
+                setattr(product, attr, value)
+
+        product.save()
+        return Response({"message": "Product updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
 
     
 class ProductDeleteView(generics.DestroyAPIView):

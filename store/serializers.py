@@ -17,12 +17,12 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def validate_image(self, value):
         """
-        Allow both file uploads and URL strings for the image field.
+        Allow the `image` field to accept both URLs and uploaded files.
         """
         if isinstance(value, str):
             if not value.startswith(("http://", "https://")):
                 raise serializers.ValidationError("Invalid image URL.")
-        elif value and hasattr(value, "content_type"):  # Check for file uploads
+        elif value and hasattr(value, "content_type"):
             if not value.content_type.startswith("image/"):
                 raise serializers.ValidationError("Uploaded file must be an image.")
         else:
