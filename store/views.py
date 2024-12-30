@@ -75,6 +75,10 @@ class VendorDashboardView(APIView):
 
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class ProductUpdateView(generics.UpdateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsVendorPermission]
@@ -91,26 +95,47 @@ class ProductUpdateView(generics.UpdateAPIView):
 
     def fetch_image_from_url(self, url):
         """
-        Fetch an image from a URL and return it as a ContentFile.
+        Fetch an image from a URL, validate it, and return it as a ContentFile.
         """
         try:
-            response = requests.get(url)
+            response = requests.get(url, stream=True)
             response.raise_for_status()  # Raise an error for bad responses
+            if int(response.headers.get('Content-Length', 0)) > 10 * 1024 * 1024:  # Limit size to 10MB
+                raise ValidationError("The image file is too large.")
+
+            file_content = response.content
+            # Validate that the content is a valid image
+            self.validate_image_content(file_content)
+
             file_name = os.path.basename(url)
-            return ContentFile(response.content, name=file_name)
+            return ContentFile(file_content, name=file_name)
         except requests.RequestException as e:
-            raise serializers.ValidationError(f"Failed to fetch image from URL: {e}")
+            logger.error(f"Failed to fetch image from URL: {url} - {str(e)}")
+            raise ValidationError(f"Failed to fetch image from URL: {e}")
+
+    def validate_image_content(self, file_content):
+        """
+        Validate that the fetched content is a valid image.
+        """
+        try:
+            Image.open(BytesIO(file_content)).verify()
+        except Exception as e:
+            logger.error(f"Invalid image content: {e}")
+            raise ValidationError(f"Invalid image content: {e}")
 
     def update(self, request, *args, **kwargs):
         """
         Handle the update request, including saving an image from a URL.
         """
+        logger.info(f"Update request received for product {kwargs['pk']} by user {request.user}")
+
         product = self.get_object()
         serializer = self.get_serializer(product, data=request.data, partial=True)
 
         try:
             serializer.is_valid(raise_exception=True)
-        except serializers.ValidationError as e:
+        except ValidationError as e:
+            logger.error(f"Validation Errors: {e.detail}")
             return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 
         validated_data = serializer.validated_data
@@ -118,18 +143,22 @@ class ProductUpdateView(generics.UpdateAPIView):
 
         if image:
             if isinstance(image, str):  # Handle URL-based images
-                content_file = self.fetch_image_from_url(image)
-                product.image.save(content_file.name, content_file, save=True)
+                try:
+                    content_file = self.fetch_image_from_url(image)
+                    product.image.save(content_file.name, content_file, save=True)
+                except ValidationError as e:
+                    return Response({"image_error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 product.image = image  # Handle file uploads
 
+        # Update other fields
         for attr, value in validated_data.items():
             if attr != "image":
                 setattr(product, attr, value)
 
         product.save()
+        logger.info(f"Product {product.id} updated successfully by user {request.user}")
         return Response({"message": "Product updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
-
     
 class ProductDeleteView(generics.DestroyAPIView):
     """

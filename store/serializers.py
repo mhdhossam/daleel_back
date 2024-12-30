@@ -26,23 +26,26 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Product
-        fields = ['title', 'description', 'price','stock','image','sold_count','category']  # Replace with relevant fields
+        fields = ['id', 'title', 'category', 'description', 'stock', 'price', 'image', 'sold_count', 'created_at']
+        read_only_fields = ['id', 'vendor', 'sold_count', 'created_at']  # Replace with relevant fields
 
 
         
     def create(self, validated_data):
         return Product.objects.create(**validated_data)    
     def validate_image(self, value):
-    
-     if isinstance(value, str):
-        if not value.startswith(("http://", "https://")):
-            raise serializers.ValidationError("Invalid image URL.")
-     elif value and hasattr(value, "content_type"):
-        if not value.content_type.startswith("image/"):
-            raise serializers.ValidationError("Uploaded file must be an image.")
-     else:
-        raise serializers.ValidationError("Invalid image input.")
-     return value
+        """
+        Allow the `image` field to accept both URLs and uploaded files.
+        """
+        if isinstance(value, str):
+            if not value.startswith(("http://", "https://")):
+                raise serializers.ValidationError("Invalid image URL.")
+        elif value and hasattr(value, "content_type"):
+            if not value.content_type.startswith("image/"):
+                raise serializers.ValidationError("Uploaded file must be an image.")
+        else:
+            raise serializers.ValidationError("Invalid image input.")
+        return value
 
 
 # serializers.py
