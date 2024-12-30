@@ -21,6 +21,7 @@ from rest_framework.exceptions import ValidationError,PermissionDenied
 from decimal import Decimal
 import requests
 from django.core.files.base import ContentFile
+import os
 
 
 class CategoryListView(APIView):
