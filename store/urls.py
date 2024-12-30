@@ -12,7 +12,9 @@ from.views import( AddToCartView,
                   WishlistView,
                   AddToWishlistView,
                   RemoveFromWishlistView,
-                  CategoryListView
+                  CategoryListView,
+                  CheckoutView,
+                  CheckoutRetrieveAPIView
                   )
 # from.payment import CreateInstaPayView, VerifyInstaPayView
 
@@ -36,6 +38,11 @@ urlpatterns = [
     path('api/favorites/view/', WishlistView.as_view(), name='view-wishlist'),
     path('api/favorites/add/<int:product_id>/', AddToWishlistView.as_view(), name='add-to-wishlist'),
     path('api/favorites/remove/<int:product_id>/', RemoveFromWishlistView.as_view(), name='remove-from-wishlist'),
+    
+    path('api/checkout/', CheckoutView.as_view(), name='checkout'),
+    path('api/checkout/retrieve/', CheckoutRetrieveAPIView.as_view(), name='checkout-retrieve'),
+
+
 
     #payment
     # path('api/payment/create/', CreateInstaPayView.as_view(), name='payment-create'),

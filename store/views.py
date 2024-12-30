@@ -387,3 +387,31 @@ class CheckoutView(APIView):
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class CheckoutRetrieveAPIView(RetrieveAPIView):
+    """
+    API view to retrieve the checkout details for a user's order.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = CheckoutSerializer
+
+    def get_object(self):
+        """
+        Retrieve the checkout object for the user's pending order.
+        """
+        try:
+            order = Order.objects.get(user=self.request.user, status='Pending')
+            checkout = Checkout.objects.get(order=order)
+            return checkout
+        except Order.DoesNotExist:
+            raise ValidationError("No pending order found.")
+        except Checkout.DoesNotExist:
+            raise ValidationError("Checkout details not found.")
+        
+    def get(self, request, *args, **kwargs):
+        """
+        Handles GET requests and returns the checkout details.
+        """
+        checkout = self.get_object()
+        serializer = self.get_serializer(checkout)
+        return Response(serializer.data, status=status.HTTP_200_OK)
