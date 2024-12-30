@@ -91,9 +91,6 @@ class CheckoutSerializer(serializers.ModelSerializer):
     """
     Serializer for the Checkout model.
     """
-
-
-    
     class Meta:
         model = Checkout
         fields = ['id', 'user', 'order', 'total_price', 'payment_status', 'payment_method', 'shipping_address', 'created_at', 'updated_at']
