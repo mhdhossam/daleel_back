@@ -174,6 +174,12 @@ class Checkout(models.Model):
         related_name="checkouts"
    )
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="checkout")
+    total_price = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="Total price of the order"
+    )
     payment_status = models.CharField(
         max_length=20,
         choices=[
