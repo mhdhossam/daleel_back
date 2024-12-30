@@ -26,7 +26,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Product
-        fields = ['title', 'description', 'price','stock','image','category']  # Replace with relevant fields
+        fields = ['title', 'description', 'price','stock','image','sold_count','category']  # Replace with relevant fields
 
 
         
