@@ -10,9 +10,10 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
+    vendor_name = serializers.CharField(source='vendor.username', read_only=True)
     class Meta: 
         model = Product
-        fields = ['id','title', 'category', 'description', 'stock','price',  'image', 'sold_count', 'created_at']
+        fields = ['id','title', 'category', 'description', 'stock','price',  'image', 'sold_count','vendor_name', 'created_at']
         read_only_fields = ['vendor', 'sold_count', 'created_at']
     def get_image(self, obj):
         """
