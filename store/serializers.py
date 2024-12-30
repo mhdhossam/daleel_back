@@ -87,3 +87,14 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'order_items', 'total_price', 'status', 'created_at', 'updated_at']
         read_only_fields = ['id', 'status', 'total_price', 'created_at', 'updated_at']
 
+class CheckoutSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Checkout model.
+    """
+
+
+    
+    class Meta:
+        model = Checkout
+        fields = ['id', 'user', 'order', 'total_price', 'payment_status', 'payment_method', 'shipping_address', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']

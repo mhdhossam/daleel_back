@@ -342,3 +342,48 @@ class RemoveFromWishlistView(DestroyAPIView):
             return Response({"message": "Product removed from wishlist."}, status=200)
         except Favorite.DoesNotExist:
             return Response({"error": "Product not in your wishlist."}, status=404)
+        
+class CheckoutView(APIView):
+    """
+    View to handle checkout process.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        serializer = CheckoutSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            user = request.user
+            cart = Order.objects.filter(user=user, status='CART').first()
+
+            if not cart:
+                return Response({"error": "Cart not found or is empty."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Calculate total price
+            cart.calculate_total_price()
+
+            # Process payment (dummy logic)
+            payment_method = serializer.validated_data['payment_method']
+            if payment_method == 'INSTAPAY':
+                # Assume card processing is done here
+                payment_status = True
+            elif payment_method == 'CASH':
+                payment_status = True  # Cash on delivery
+            else:
+                payment_status = False
+
+            if not payment_status:
+                return Response({"error": "Payment failed."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Update cart to order
+            cart.status = 'PAID'
+            cart.save()
+
+            return Response({
+                "message": "Checkout successful.",
+                "order_id": cart.id,
+                "total_price": cart.total_price,
+                "status": cart.status
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
