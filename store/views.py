@@ -123,22 +123,21 @@ class ProductUpdateView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         """
-        Save the updated product data and handle file or URL logic for the image.
+        Save the updated product data and handle optional image updates.
         """
         instance = serializer.instance
-        image = serializer.validated_data.get("image", None)
+        validated_data = serializer.validated_data
 
-        if image:
-            if isinstance(image, str):
-                # If the image is a URL, save it directly
-                instance.image = image
-            elif hasattr(image, "file"):
-                # If the image is an uploaded file, save it
-                instance.image = image
+        # Update image only if provided
+        if "image" in validated_data:
+            instance.image = validated_data["image"]
 
-        # Save other fields
-        serializer.save()
+        # Update other fields dynamically
+        for attr, value in validated_data.items():
+            if attr != "image":  # Skip image, as it's already handled
+                setattr(instance, attr, value)
 
+        instance.save()
     
 class ProductDeleteView(generics.DestroyAPIView):
     """
