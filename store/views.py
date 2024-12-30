@@ -98,34 +98,81 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.core.files.base import ContentFile
+import requests
+import os
+from .models import Product
+from .serializers import ProductCreateSerializer
+from client.permissions import IsVendorPermission
+
+
 class ProductUpdateView(generics.UpdateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsVendorPermission]
     serializer_class = ProductCreateSerializer
 
-    def get_queryset(self,request):
+    def get_queryset(self):
         """
-        Restrict vendors to updating only their products.
+        Override get_queryset to handle image processing for products with URL-based images.
+        Downloads the image if the `image` field is a URL.
         """
-        user = self.request.user
+        queryset = Product.objects.all()
+
+        for product in queryset:
+            # If the image is a URL, fetch and save it as a file
+            if isinstance(product.image, str) and product.image.startswith(("http://", "https://")):
+                try:
+                    response = requests.get(product.image, stream=True)
+                    response.raise_for_status()
+
+                    # Extract filename from the URL
+                    file_name = os.path.basename(product.image.split("?")[0])
+
+                    # Save the image to the media directory
+                    content_file = ContentFile(response.content, name=file_name)
+                    product.image.save(file_name, content_file, save=True)
+                except requests.RequestException as e:
+                    print(f"Failed to fetch image for product {product.id}: {e}")
+
+        return queryset
+
+    def update(self, request, *args, **kwargs):
+        """
+        Handle the update request for the product.
+        """
         product = self.get_object()
-        serializer = self.get_serializer(instance=product, data=request.data, partial=True)
-        if hasattr(user, 'vendor') and user.vendor.is_vendor:
-            return Product.objects.filter(vendor=user.vendor)
+        serializer = self.get_serializer(product, data=request.data, partial=True)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError as e:
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
         validated_data = serializer.validated_data
 
-    # Handle the image field
+        # Handle the image field if provided as part of the update
         image = validated_data.get("image")
         if image:
-            if isinstance(image, str):  # Handle URL-based images
+            if isinstance(image, str):  # If image is a URL
                 try:
-                    content_file = self.fetch_image_from_url(image)
-                    product.image.save(content_file.name, content_file, save=True)
-                except ValidationError as e:
-                    logger.error(f"Error saving image from URL: {e}")
+                    response = requests.get(image, stream=True)
+                    response.raise_for_status()
+
+                    # Extract filename from the URL
+                    file_name = os.path.basename(image.split("?")[0])
+
+                    # Save the image to the media directory
+                    content_file = ContentFile(response.content, name=file_name)
+                    product.image.save(file_name, content_file, save=True)
+                except requests.RequestException as e:
                     return Response({"image_error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                product.image = image  # Handle file uploads
+            else:  # Handle file uploads
+                product.image = image
 
         # Update other fields
         for attr, value in validated_data.items():
@@ -133,59 +180,8 @@ class ProductUpdateView(generics.UpdateAPIView):
                 setattr(product, attr, value)
 
         product.save()
-        logger.info(f"Product {product.id} updated successfully by user {request.user}")
-        return Response({"message": "Product updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
-       
-        return Product.objects.none()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def fetch_image_from_url(self, url):
-        """
-        Fetch an image from a URL and return it as a ContentFile.
-        """
-        try:
-            response = requests.get(url, stream=True)
-            response.raise_for_status()  # Raise an error for bad responses
-            if int(response.headers.get('Content-Length', 0)) > 10 * 1024 * 1024:  # Limit file size to 10MB
-                raise ValidationError("The image file is too large.")
-
-            file_content = response.content
-            # Validate that the content is a valid image
-            self.validate_image_content(file_content)
-
-            file_name = os.path.basename(url)
-            return ContentFile(file_content, name=file_name)
-        except requests.RequestException as e:
-            logger.error(f"Failed to fetch image from URL: {url} - {str(e)}")
-            raise ValidationError(f"Failed to fetch image from URL: {e}")
-
-    def validate_image_content(self, file_content):
-        """
-        Validate that the fetched content is a valid image.
-        """
-        try:
-            Image.open(BytesIO(file_content)).verify()
-        except Exception as e:
-            logger.error(f"Invalid image content: {e}")
-            raise ValidationError(f"Invalid image content: {e}")
-
-    def update(self, request, *args, **kwargs):
-        """
-        Handle the update request, including saving an image from a URL.
-        """
-        logger.info(f"Update request received for product {kwargs.get('pk')} by user {request.user}")
-
-        product = self.get_object()
-
-    # Initialize the serializer with the instance and incoming data
-        serializer = self.get_serializer(instance=product, data=request.data, partial=True)
-
-    # Validate the data
-        if not serializer.is_valid():
-         
-         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Extract validated data
-       
         
 
        
