@@ -37,4 +37,4 @@ class OrderItemAdmin(admin.ModelAdmin):
         return obj.get_total_price()
     get_total_price.short_description = 'Total Price'
 
-
+admin.site.register(Checkout)
