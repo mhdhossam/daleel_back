@@ -103,13 +103,39 @@ class ProductUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsVendorPermission]
     serializer_class = ProductCreateSerializer
 
-    def get_queryset(self):
+    def get_queryset(self,request):
         """
         Restrict vendors to updating only their products.
         """
         user = self.request.user
+        product = self.get_object()
+        serializer = self.get_serializer(instance=product, data=request.data, partial=True)
         if hasattr(user, 'vendor') and user.vendor.is_vendor:
             return Product.objects.filter(vendor=user.vendor)
+        validated_data = serializer.validated_data
+
+    # Handle the image field
+        image = validated_data.get("image")
+        if image:
+            if isinstance(image, str):  # Handle URL-based images
+                try:
+                    content_file = self.fetch_image_from_url(image)
+                    product.image.save(content_file.name, content_file, save=True)
+                except ValidationError as e:
+                    logger.error(f"Error saving image from URL: {e}")
+                    return Response({"image_error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                product.image = image  # Handle file uploads
+
+        # Update other fields
+        for attr, value in validated_data.items():
+            if attr != "image":
+                setattr(product, attr, value)
+
+        product.save()
+        logger.info(f"Product {product.id} updated successfully by user {request.user}")
+        return Response({"message": "Product updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
+       
         return Product.objects.none()
 
     def fetch_image_from_url(self, url):
@@ -159,31 +185,10 @@ class ProductUpdateView(generics.UpdateAPIView):
          return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     # Extract validated data
-        validated_data = serializer.validated_data
-
-    # Handle the image field
-        image = validated_data.get("image")
+       
         
 
-        if image:
-            if isinstance(image, str):  # Handle URL-based images
-                try:
-                    content_file = self.fetch_image_from_url(image)
-                    product.image.save(content_file.name, content_file, save=True)
-                except ValidationError as e:
-                    logger.error(f"Error saving image from URL: {e}")
-                    return Response({"image_error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                product.image = image  # Handle file uploads
-
-        # Update other fields
-        for attr, value in validated_data.items():
-            if attr != "image":
-                setattr(product, attr, value)
-
-        product.save()
-        logger.info(f"Product {product.id} updated successfully by user {request.user}")
-        return Response({"message": "Product updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
+       
 
 
     
