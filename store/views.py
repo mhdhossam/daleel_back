@@ -21,9 +21,6 @@ from rest_framework.exceptions import ValidationError,PermissionDenied
 from decimal import Decimal
 import requests
 from django.core.files.base import ContentFile
-import os
-from PIL import Image
-from io import BytesIO
 
 
 class CategoryListView(APIView):
@@ -77,89 +74,70 @@ class VendorDashboardView(APIView):
 
 
 
-import logging
-
-logger = logging.getLogger(__name__)
-
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.core.files.base import ContentFile
-from PIL import Image
-from io import BytesIO
-import requests
-import os
-from .models import Product
-from .serializers import ProductCreateSerializer
-from client.permissions import IsVendorPermission
-import logging
-
-logger = logging.getLogger(__name__)
-
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from django.core.files.base import ContentFile
-import requests
-import os
-from .models import Product
-from .serializers import ProductCreateSerializer
-from client.permissions import IsVendorPermission
-
-
 class ProductUpdateView(generics.UpdateAPIView):
+    """
+    API view to allow only vendors to update their products.
+    """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsVendorPermission]
     serializer_class = ProductCreateSerializer
 
     def get_queryset(self):
         """
-        Override get_queryset to handle image processing for products with URL-based images.
-        Downloads the image if the `image` field is a URL.
+        Ensure that vendors can only update their own products.
         """
-        queryset = Product.objects.all()
-
-        for product in queryset:
-            # If the image is a URL, fetch and save it as a file
-            if isinstance(product.image, str) and product.image.startswith(("http://", "https://")):
-                try:
-                    response = requests.get(product.image, stream=True)
-                    response.raise_for_status()
-
-                    # Extract filename from the URL
-                    file_name = os.path.basename(product.image.split("?")[0])
-
-                    # Save the image to the media directory
-                    content_file = ContentFile(response.content, name=file_name)
-                    product.image.save(file_name, content_file, save=True)
-                except requests.RequestException as e:
-                    print(f"Failed to fetch image for product {product.id}: {e}")
-
-        return queryset
+        user = self.request.user
+        if hasattr(user, 'vendor') and user.vendor.is_vendor:
+            return Product.objects.filter(vendor=user.vendor)
+        return Product.objects.none()
 
     def update(self, request, *args, **kwargs):
         """
-        Handle the update request for the product.
+        Handle the update request and provide meaningful responses.
         """
         product = self.get_object()
-        serializer = self.get_serializer(product, data=request.data, partial=True)
+        if not product:
+            return Response(
+                {"error": "Product not found or unauthorized access."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if product.vendor != request.user.vendor:
+            raise PermissionDenied("You do not have permission to edit this product.")
+
+        partial = kwargs.pop("partial", False)  # Allow partial updates
+        serializer = self.get_serializer(product, data=request.data, partial=partial)
 
         try:
             serializer.is_valid(raise_exception=True)
         except ValidationError as e:
-            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            print(f"Validation Errors: {e.detail}")  # Log validation errors
+            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 
-        product.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        self.perform_update(serializer)
 
-        
+        return Response(
+            {"message": "Product updated successfully!", "data": serializer.data},
+            status=status.HTTP_200_OK,
+        )
 
-       
+    def perform_update(self, serializer):
+        """
+        Save the updated product data and handle file or URL logic for the image.
+        """
+        instance = serializer.instance
+        image = serializer.validated_data.get("image", None)
 
+        if image:
+            if isinstance(image, str):
+                # If the image is a URL, save it directly
+                instance.image = image
+            elif hasattr(image, "file"):
+                # If the image is an uploaded file, save it
+                instance.image = image
+
+        # Save other fields
+        serializer.save()
 
     
 class ProductDeleteView(generics.DestroyAPIView):
