@@ -152,13 +152,15 @@ class ProductUpdateView(generics.UpdateAPIView):
         serializer = self.get_serializer(product, data=request.data, partial=True)
 
         try:
-            serializer.is_valid(raise_exception=True)
+            
+            validated_data = serializer.validated_data
+            image = validated_data.get("image")
+            
         except ValidationError as e:
             logger.error(f"Validation Errors: {e.detail}")
             return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 
-        validated_data = serializer.validated_data
-        image = validated_data.get("image")
+        
 
         if image:
             if isinstance(image, str):  # Handle URL-based images
