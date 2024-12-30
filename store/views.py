@@ -149,17 +149,20 @@ class ProductUpdateView(generics.UpdateAPIView):
         logger.info(f"Update request received for product {kwargs.get('pk')} by user {request.user}")
 
         product = self.get_object()
-        serializer = self.get_serializer(product, data=request.data, partial=True)
 
-        try:
-            serializer.is_valid(raise_exception=True)
-            validated_data = serializer.validated_data
-            image = validated_data.get("image")
-            
-        except ValidationError as e:
-            logger.error(f"Validation Errors: {e.detail}")
-            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+    # Initialize the serializer with the instance and incoming data
+        serializer = self.get_serializer(instance=product, data=request.data, partial=True)
 
+    # Validate the data
+        if not serializer.is_valid():
+         logger.error(f"Validation Errors: {serializer.errors}")
+         return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Extract validated data
+        validated_data = serializer.validated_data
+
+    # Handle the image field
+        image = validated_data.get("image")
         
 
         if image:
