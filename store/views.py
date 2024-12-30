@@ -152,7 +152,7 @@ class ProductUpdateView(generics.UpdateAPIView):
         serializer = self.get_serializer(product, data=request.data, partial=True)
 
         try:
-            
+            serializer.is_valid(raise_exception=True)
             validated_data = serializer.validated_data
             image = validated_data.get("image")
             
