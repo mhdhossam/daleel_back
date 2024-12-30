@@ -155,7 +155,7 @@ class ProductUpdateView(generics.UpdateAPIView):
 
     # Validate the data
         if not serializer.is_valid():
-         logger.error(f"Validation Errors: {serializer.errors}")
+         
          return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     # Extract validated data
