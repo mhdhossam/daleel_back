@@ -153,32 +153,6 @@ class ProductUpdateView(generics.UpdateAPIView):
         except ValidationError as e:
             return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        validated_data = serializer.validated_data
-
-        # Handle the image field if provided as part of the update
-        image = validated_data.get("image")
-        if image:
-            if isinstance(image, str):  # If image is a URL
-                try:
-                    response = requests.get(image, stream=True)
-                    response.raise_for_status()
-
-                    # Extract filename from the URL
-                    file_name = os.path.basename(image.split("?")[0])
-
-                    # Save the image to the media directory
-                    content_file = ContentFile(response.content, name=file_name)
-                    product.image.save(file_name, content_file, save=True)
-                except requests.RequestException as e:
-                    return Response({"image_error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            else:  # Handle file uploads
-                product.image = image
-
-        # Update other fields
-        for attr, value in validated_data.items():
-            if attr != "image":
-                setattr(product, attr, value)
-
         product.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
