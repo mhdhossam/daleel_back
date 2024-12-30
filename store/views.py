@@ -395,12 +395,12 @@ class CheckoutRetrieveAPIView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CheckoutSerializer
 
-    def get_object(request):
+    def get_object(self):
         """
         Retrieve the checkout object for the user's pending order.
         """
         try:
-            order = Order.objects.get(user=request.user)
+            order = Order.objects.get(user=self.request.user)
             checkout = Checkout.objects.get(order=order, status='Pending')
             return checkout
         except Order.DoesNotExist:
