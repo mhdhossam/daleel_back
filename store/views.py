@@ -401,7 +401,7 @@ class CheckoutRetrieveAPIView(RetrieveAPIView):
         """
         try:
             order = Order.objects.get(user=self.request.user)
-            checkout = Checkout.objects.get(order=order)
+            checkout = Checkout.objects.get(order=order, status='PENDING')
             return checkout
         except Order.DoesNotExist:
             raise ValidationError("No pending order found.")
