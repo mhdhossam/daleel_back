@@ -31,8 +31,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
 
         
-    def create(self, validated_data):
-        return Product.objects.create(**validated_data)    
+        
     def validate_image(self, value):
         """
         Debug the image input and allow both URLs and uploaded files.
@@ -51,6 +50,32 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Invalid image input.")
         return value
 
+from rest_framework import serializers
+from .models import Product
+
+class ProductCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'title', 'category', 'description', 'stock', 'price', 'image', 'sold_count', 'created_at']
+        read_only_fields = ['id', 'vendor', 'sold_count', 'created_at']
+    def create(self, validated_data):
+        return Product.objects.create(**validated_data)
+
+    def validate_image(self, value):
+        """
+        Allow the `image` field to accept both URLs and uploaded files.
+        """
+        if isinstance(value, str):
+            # Validate URL format
+            if not value.startswith(("http://", "https://")):
+                raise serializers.ValidationError("Invalid image URL.")
+        elif hasattr(value, "content_type"):
+            # Validate uploaded files
+            if not value.content_type.startswith("image/"):
+                raise serializers.ValidationError("Uploaded file must be an image.")
+        else:
+            raise serializers.ValidationError("Invalid image input.")
+        return value
 
 
 # serializers.py

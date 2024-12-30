@@ -81,6 +81,23 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.core.files.base import ContentFile
+from PIL import Image
+from io import BytesIO
+import requests
+import os
+from .models import Product
+from .serializers import ProductCreateSerializer
+from client.permissions import IsVendorPermission
+import logging
+
+logger = logging.getLogger(__name__)
+
 class ProductUpdateView(generics.UpdateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated, IsVendorPermission]
@@ -97,12 +114,12 @@ class ProductUpdateView(generics.UpdateAPIView):
 
     def fetch_image_from_url(self, url):
         """
-        Fetch an image from a URL, validate it, and return it as a ContentFile.
+        Fetch an image from a URL and return it as a ContentFile.
         """
         try:
             response = requests.get(url, stream=True)
             response.raise_for_status()  # Raise an error for bad responses
-            if int(response.headers.get('Content-Length', 0)) > 10 * 1024 * 1024:  # Limit size to 10MB
+            if int(response.headers.get('Content-Length', 0)) > 10 * 1024 * 1024:  # Limit file size to 10MB
                 raise ValidationError("The image file is too large.")
 
             file_content = response.content
@@ -126,37 +143,35 @@ class ProductUpdateView(generics.UpdateAPIView):
             raise ValidationError(f"Invalid image content: {e}")
 
     def update(self, request, *args, **kwargs):
-    
+        """
+        Handle the update request, including saving an image from a URL.
+        """
         logger.info(f"Update request received for product {kwargs.get('pk')} by user {request.user}")
 
         product = self.get_object()
         serializer = self.get_serializer(product, data=request.data, partial=True)
 
         try:
-        # Validate the input data
-         serializer.is_valid(raise_exception=True)
+            serializer.is_valid(raise_exception=True)
         except ValidationError as e:
-        # Log detailed validation errors
             logger.error(f"Validation Errors: {e.detail}")
             return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Handle validated data
         validated_data = serializer.validated_data
         image = validated_data.get("image")
 
-    # Handle the image field (URL or file)
         if image:
-         if isinstance(image, str):  # If image is a URL
-             try:
+            if isinstance(image, str):  # Handle URL-based images
+                try:
                     content_file = self.fetch_image_from_url(image)
                     product.image.save(content_file.name, content_file, save=True)
-             except ValidationError as e:
-                logger.error(f"Error saving image from URL: {e}")
-                return Response({"image_error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-         else:
-            product.image = image  # Handle file uploads
+                except ValidationError as e:
+                    logger.error(f"Error saving image from URL: {e}")
+                    return Response({"image_error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                product.image = image  # Handle file uploads
 
-    # Update other fields
+        # Update other fields
         for attr, value in validated_data.items():
             if attr != "image":
                 setattr(product, attr, value)
@@ -164,6 +179,7 @@ class ProductUpdateView(generics.UpdateAPIView):
         product.save()
         logger.info(f"Product {product.id} updated successfully by user {request.user}")
         return Response({"message": "Product updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
+
 
     
 class ProductDeleteView(generics.DestroyAPIView):
