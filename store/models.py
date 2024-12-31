@@ -126,10 +126,6 @@ class Order(models.Model):
     def get_cart(cls, user):
         return cls.objects.filter(user=user.customer, status='CART').first()
 
-
-
-
-
 class OrderItem(models.Model):
     """
     Intermediate model for products in an order.
