@@ -199,7 +199,7 @@ class AddToCartView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        user = request.user
+        user = request.user.customer
         product_id = request.data.get("product_id")
         quantity = request.data.get("quantity", 1)
 
