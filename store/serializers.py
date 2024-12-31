@@ -92,7 +92,10 @@ class CheckoutSerializer(serializers.ModelSerializer):
     """
     Serializer for the Checkout model.
     """
+    total_price = serializers.DecimalField(source='order.total_price', read_only=True, max_digits=6, decimal_places=2)
+    status = serializers.CharField(source='order.status', read_only=True)
+
     class Meta:
         model = Checkout
-        fields = ['id', 'user', 'order', 'total_price', 'payment_status', 'payment_method', 'shipping_address', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'order', 'total_price', 'payment_status', 'status','payment_method', 'shipping_address', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
