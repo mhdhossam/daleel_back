@@ -182,6 +182,8 @@ class ProductDetailView(RetrieveAPIView):
         serializer = self.get_serializer(product)
         return Response(serializer.data)
 
+
+
 class ProductCreateView(CreateAPIView):
     """
     API view to allow only vendors to create products.
@@ -191,7 +193,17 @@ class ProductCreateView(CreateAPIView):
     serializer_class = ProductCreateSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user) 
+        """
+        Override the perform_create method to include vendor assignment.
+        """
+        # Ensure the user is associated with a vendor
+        try:
+            vendor = self.request.user.vendor  # Assuming the `Vendor` model has a OneToOneField to `User`
+        except Vendor.DoesNotExist:
+            raise PermissionDenied("You must be a vendor to create products.")
+
+        # Save the product with the associated vendor
+        serializer.save(vendor=vendor)
 
 #jgkjg
 class AddToCartView(APIView):
