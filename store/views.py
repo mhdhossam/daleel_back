@@ -401,6 +401,7 @@ class CheckoutView(APIView):
                 shipping_address=shipping_address,
                 payment_status='PAID' if payment_status else 'FAILED'
             )
+            print(checkout)
 
             # Update cart status to 'PAID'
             cart.status = 'PAID'
