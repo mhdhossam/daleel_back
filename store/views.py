@@ -72,8 +72,6 @@ class VendorDashboardView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
-
-
 class ProductUpdateView(generics.UpdateAPIView):
     """
     API view to allow only vendors to update their products.
@@ -182,8 +180,6 @@ class ProductDetailView(RetrieveAPIView):
         serializer = self.get_serializer(product)
         return Response(serializer.data)
 
-
-
 class ProductCreateView(CreateAPIView):
     """
     API view to allow only vendors to create products.
@@ -205,7 +201,6 @@ class ProductCreateView(CreateAPIView):
         # Save the product with the associated vendor
         serializer.save(vendor=vendor)
 
-#jgkjg
 class AddToCartView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -307,6 +302,28 @@ class ViewCartView(APIView):
             return Response({"error": "Cart is empty."}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(OrderSerializer(cart).data, status=status.HTTP_200_OK)
+    
+class OrderView(APIView):
+    """
+    API view to retrieve all orders for the authenticated user or details of a specific order.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, order_id=None):
+        try:
+            user = request.user.customer  # Assuming a Customer model related to the User
+            if order_id:
+                # Retrieve specific order
+                order = Order.objects.get(id=order_id, user=user)
+                serializer = OrderSerializer(order)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                # Retrieve all orders for the user
+                orders = Order.objects.filter(user=user).order_by('-created_at')
+                serializer = OrderSerializer(orders, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
 
 class WishlistView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -355,12 +372,6 @@ class RemoveFromWishlistView(DestroyAPIView):
         except Favorite.DoesNotExist:
             return Response({"error": "Product not in your wishlist."}, status=404)
         
-from rest_framework.exceptions import ValidationError
-
-import logging
-
-logger = logging.getLogger(__name__)
-
 class CheckoutView(APIView):
     """
     View to handle the checkout process.
@@ -370,45 +381,31 @@ class CheckoutView(APIView):
     authentication_classes = [JWTAuthentication]
 
     def post(self, request, *args, **kwargs):
-        logger.debug("Starting checkout process.")
-
         serializer = CheckoutSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            logger.debug("Serializer is valid. Data: %s", serializer.validated_data)
-
             # Get the authenticated user
             user = request.user
-            logger.debug("Authenticated user: %s", user)
-
             if not hasattr(user, 'customer'):
-                logger.error("User is not a customer: %s", user)
                 return Response({"error": "User is not a customer."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Fetch the user's cart (Order with status 'CART')
             try:
                 cart = Order.objects.get(user=user.customer, status='CART')
-                logger.debug("Fetched cart: %s", cart)
             except Order.DoesNotExist:
-                logger.error("Cart not found or is empty for user: %s", user.customer)
                 return Response({"error": "Cart not found or is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Calculate total price
             cart.calculate_total_price()
-            logger.debug("Calculated cart total price: %s", cart.total_price)
 
             # Process payment
             payment_method = serializer.validated_data['payment_method']
             shipping_address = serializer.validated_data['shipping_address']
-            logger.debug("Payment method: %s, Shipping address: %s", payment_method, shipping_address)
 
             if payment_method == 'INSTAPAY':
                 payment_status = True  # Simulate successful payment
-                logger.debug("Simulated INSTAPAY payment successful.")
             elif payment_method == 'CASH':
                 payment_status = True  # Cash on delivery
-                logger.debug("Cash on delivery selected.")
             else:
-                logger.error("Invalid payment method: %s", payment_method)
                 return Response({"error": "Invalid payment method."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Save Checkout entry
@@ -419,12 +416,10 @@ class CheckoutView(APIView):
                 shipping_address=shipping_address,
                 payment_status='PAID' if payment_status else 'FAILED'
             )
-            logger.debug("Created checkout entry: %s", checkout)
 
             # Update cart status to 'PAID'
             cart.status = 'PAID'
             cart.save()
-            logger.debug("Updated cart status to PAID for cart: %s", cart)
 
             return Response({
                 "message": "Checkout successful.",
@@ -433,7 +428,6 @@ class CheckoutView(APIView):
                 "status": cart.status,
             }, status=status.HTTP_200_OK)
 
-        logger.error("Serializer errors: %s", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CheckoutRetrieveAPIView(RetrieveAPIView):
