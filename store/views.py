@@ -322,14 +322,13 @@ class OrderView(APIView):
                 serializer = OrderSerializer(order)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                # Retrieve active order (status = CART)
-                active_order = Order.objects.filter(user=user, status='CART').first()
-                if active_order:
-                    serializer = OrderSerializer(active_order)
-                    return Response(serializer.data, status=status.HTTP_200_OK)
-                return Response({"error": "No active order found."}, status=status.HTTP_404_NOT_FOUND)
+                # Retrieve all orders for the user
+                orders = Order.objects.filter(user=user).order_by('-created_at')
+                serializer = OrderSerializer(orders, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
         except Order.DoesNotExist:
             return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+
 
 
 class WishlistView(APIView):

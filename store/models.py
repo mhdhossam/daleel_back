@@ -105,12 +105,6 @@ class Order(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = 'Order'
-        verbose_name_plural = 'Orders'
-
     def __str__(self):
         return f"Order #{self.id} by {self.user.username}"
     def save(self, *args, **kwargs):
@@ -128,6 +122,13 @@ class Order(models.Model):
     @classmethod
     def get_cart(cls, user):
         return cls.objects.filter(user=user.customer, status='CART').first()
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Order'
+        verbose_name_plural = 'Orders'
+
+   
 
 class OrderItem(models.Model):
     """
