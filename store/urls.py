@@ -32,6 +32,8 @@ urlpatterns = [
     path('api/vendor/dashboard/', VendorDashboardView.as_view(), name='vendor-dashboard'),
 
     path('api/orders/', OrderView.as_view(), name='order-list'),
+    path('orders/<int:order_id>/', OrderView.as_view(), name='order-detail'),  # Fetch specific order
+
     path('api/cart/add/', AddToCartView.as_view(), name='add-to-cart'),
     path('api/cart/remove/<int:pk>/', RemoveFromCartView.as_view(), name='remove-from-cart'),
     path('api/cart/update/<int:pk>/', UpdateCartView.as_view(), name='update-cart'),

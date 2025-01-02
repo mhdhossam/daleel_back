@@ -70,13 +70,7 @@ class Favorite(models.Model):
 
 class Order(models.Model):
     # Order statuses
-    ORDER_STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('PROCESSING', 'Processing'),
-        ('SHIPPED', 'Shipped'),
-        ('DELIVERED', 'Delivered'),
-        ('CANCELLED', 'Cancelled'),
-    ]
+   
 
     # Relationships
     user = models.ForeignKey(
@@ -119,6 +113,10 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} by {self.user.username}"
+    def save(self, *args, **kwargs):
+        if not self.status:
+            self.status = "PENDING"  # Overwrites default
+        super().save(*args, **kwargs)
 
     def calculate_total_price(self):
         """
