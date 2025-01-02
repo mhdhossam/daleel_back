@@ -357,7 +357,7 @@ class RemoveFromWishlistView(DestroyAPIView):
         
 class CheckoutView(APIView):
     """
-    View to handle checkout process.
+    View to handle the checkout process and save data in the Checkout table.
     """
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
@@ -365,7 +365,7 @@ class CheckoutView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = CheckoutSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            user = request.user.customer
+            user = request.user.customer  # Assuming a Customer model related to User
             cart = Order.objects.filter(user=user, status='CART').first()
 
             if not cart:
@@ -376,6 +376,8 @@ class CheckoutView(APIView):
 
             # Process payment (dummy logic)
             payment_method = serializer.validated_data['payment_method']
+            shipping_address = serializer.validated_data['shipping_address']
+
             if payment_method == 'INSTAPAY':
                 # Assume card processing is done here
                 payment_status = True
@@ -387,18 +389,29 @@ class CheckoutView(APIView):
             if not payment_status:
                 return Response({"error": "Payment failed."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Update cart to order
+            # Create a Checkout instance
+            checkout = Checkout.objects.create(
+                user=user,
+                order=cart,
+                payment_method=payment_method,
+                shipping_address=shipping_address,
+                payment_status='PAID' if payment_status else 'FAILED'
+            )
+
+            # Update cart status
             cart.status = 'PAID'
             cart.save()
 
             return Response({
                 "message": "Checkout successful.",
+                "checkout_id": checkout.id,
                 "order_id": cart.id,
                 "total_price": cart.total_price,
                 "status": cart.status
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class CheckoutRetrieveAPIView(RetrieveAPIView):
     """
     API view to retrieve the checkout details for a user's order.
