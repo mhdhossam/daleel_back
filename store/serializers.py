@@ -92,7 +92,7 @@ class CheckoutSerializer(serializers.ModelSerializer):
     """
     Serializer for the Checkout model.
     """
-    order_items = OrderSerializer(read_only=True)
+    order_items = OrderItemSerializer(source='order.order_items', many=True, read_only=True)  # Nested OrderItemSerializer
     total_price = serializers.DecimalField(source='order.total_price', read_only=True, max_digits=6, decimal_places=2)
     status = serializers.CharField(source='order.status', read_only=True)
 
