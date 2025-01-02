@@ -439,7 +439,7 @@ class CheckoutView(APIView):
 
 class CheckoutRetrieveAPIView(RetrieveAPIView):
     """
-    API view to retrieve the checkout details for a user's order.
+    API view to retrieve the checkout details for a user's order, including order items.
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -450,18 +450,10 @@ class CheckoutRetrieveAPIView(RetrieveAPIView):
         Retrieve the checkout object for the user's pending order.
         """
         try:
-            order = Order.objects.get(user=self.request.user, status='PENDING')
+            order = Order.objects.get(user=self.request.user.customer, status='PENDING')
             checkout = Checkout.objects.get(order=order)
             return checkout
         except Order.DoesNotExist:
             raise ValidationError("No pending order found.")
         except Checkout.DoesNotExist:
             raise ValidationError("Checkout details not found.")
-        
-    def get(self, request, *args, **kwargs):
-        """
-        Handles GET requests and returns the checkout details.
-        """
-        checkout = self.get_object()
-        serializer = self.get_serializer(checkout)
-        return Response(serializer.data, status=status.HTTP_200_OK)
