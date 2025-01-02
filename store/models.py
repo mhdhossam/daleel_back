@@ -93,10 +93,15 @@ class Order(models.Model):
 
     # Order details
     status = models.CharField(
-        max_length=20, 
-        choices=ORDER_STATUS_CHOICES, 
-        default='PENDING',
-        help_text="Current status of the order"
+        max_length=20,
+        choices=[
+        ('PENDING', 'Pending'),
+        ('PROCESSING', 'Processing'),
+        ('SHIPPED', 'Shipped'),
+        ('DELIVERED', 'Delivered'),
+        ('CANCELLED', 'Cancelled'),
+        ],
+        default="PENDING",
     )
     total_price = models.DecimalField(
         max_digits=10, 
