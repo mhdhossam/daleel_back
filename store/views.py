@@ -303,27 +303,34 @@ class ViewCartView(APIView):
 
         return Response(OrderSerializer(cart).data, status=status.HTTP_200_OK)
     
+
+
 class OrderView(APIView):
     """
-    API view to retrieve all orders for the authenticated user or details of a specific order.
+    API view to retrieve all orders, a specific order, or the active order for the authenticated user.
     """
     permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def get(self, request, order_id=None):
         try:
             user = request.user.customer  # Assuming a Customer model related to the User
+            
             if order_id:
                 # Retrieve specific order
                 order = Order.objects.get(id=order_id, user=user)
                 serializer = OrderSerializer(order)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                # Retrieve all orders for the user
-                orders = Order.objects.filter(user=user).order_by('-created_at')
-                serializer = OrderSerializer(orders, many=True)
-                return Response(serializer.data, status=status.HTTP_200_OK)
+                # Retrieve active order (status = CART)
+                active_order = Order.objects.filter(user=user, status='CART').first()
+                if active_order:
+                    serializer = OrderSerializer(active_order)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response({"error": "No active order found."}, status=status.HTTP_404_NOT_FOUND)
         except Order.DoesNotExist:
             return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+
 
 class WishlistView(APIView):
     authentication_classes = [JWTAuthentication]
