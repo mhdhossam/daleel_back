@@ -424,13 +424,14 @@ class CheckoutView(APIView):
             )
 
             # Update cart status to 'PAID'
-            cart.status = 'PAID'
+            
             cart.save()
 
             return Response({
                 "message": "Checkout successful.",
                 "checkout_id": checkout.id,
                 "total_price": cart.total_price,
+                "orderstatus": cart.orderstat,
                 "status": cart.status,
             }, status=status.HTTP_200_OK)
 
