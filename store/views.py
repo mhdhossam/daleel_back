@@ -424,7 +424,7 @@ class CheckoutView(APIView):
             )
 
             # Update cart status to 'PAID'
-            
+            cart.status = 'PAID'
             cart.save()
 
             return Response({
