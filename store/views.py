@@ -365,7 +365,7 @@ class CheckoutView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = CheckoutSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            user = request.user
+            user = request.user.customer
             cart = Order.objects.filter(user=user, status='CART').first()
 
             if not cart:
