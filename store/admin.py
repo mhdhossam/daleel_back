@@ -20,7 +20,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = [ 'user', 'status', 'total_price','id', 'created_at', 'updated_at']
+    list_display = [ 'user', 'status', 'total_price','orderstat','id', 'created_at', 'updated_at']
     list_filter = ['status', 'created_at']
     search_fields = ['user__email', 'id']
 

@@ -86,7 +86,7 @@ class Order(models.Model):
     )
 
     # Order details
-    status = models.CharField(
+    orderstat = models.CharField(
         max_length=20,
         choices=[
         ('PENDING', 'Pending'),
@@ -94,8 +94,16 @@ class Order(models.Model):
         ('SHIPPED', 'Shipped'),
         ('DELIVERED', 'Delivered'),
         ('CANCELLED', 'Cancelled'),
-        ],
+    ],
         default="PENDING",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+        
+        ],
+        null=True,
+        blank=True,
     )
     total_price = models.DecimalField(
         max_digits=10, 
@@ -108,8 +116,8 @@ class Order(models.Model):
     def __str__(self):
         return f"Order #{self.id} by {self.user.username}"
     def save(self, *args, **kwargs):
-        if not self.status:
-            self.status = "PENDING"  # Overwrites default
+        
+        self.orderstat = "PENDING"  # Overwrites default
         super().save(*args, **kwargs)
 
     def calculate_total_price(self):

@@ -396,7 +396,7 @@ class CheckoutView(APIView):
 
             # Fetch the user's cart (Order with status 'CART')
             try:
-                cart = Order.objects.get(user=user.customer, status='CART')
+                cart = Order.objects.get(user=user.customer)
             except Order.DoesNotExist:
                 return Response({"error": "Cart not found or is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -449,7 +449,7 @@ class CheckoutRetrieveAPIView(RetrieveAPIView):
         Retrieve the checkout object for the user's pending order.
         """
         try:
-            order = Order.objects.get(user=self.request.user.customer, status='PENDING')
+            order = Order.objects.get(user=self.request.user.customer, orderstat='PENDING')
             checkout = Checkout.objects.get(order=order)
             return checkout
         except Order.DoesNotExist:
