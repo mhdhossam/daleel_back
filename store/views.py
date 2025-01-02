@@ -355,9 +355,12 @@ class RemoveFromWishlistView(DestroyAPIView):
         except Favorite.DoesNotExist:
             return Response({"error": "Product not in your wishlist."}, status=404)
         
+from rest_framework.exceptions import ValidationError
+
 class CheckoutView(APIView):
     """
-    View to handle the checkout process and save data in the Checkout table.
+    View to handle the checkout process.
+    Automatically fetches user_id and order_id based on the authenticated user.
     """
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
@@ -365,49 +368,49 @@ class CheckoutView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = CheckoutSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            user = request.user.customer  # Assuming a Customer model related to User
-            cart = Order.objects.filter(user=user, status='CART').first()
+            # Get the authenticated user
+            user = request.user
+            if not hasattr(user, 'customer'):
+                return Response({"error": "User is not a customer."}, status=status.HTTP_400_BAD_REQUEST)
 
-            if not cart:
+            # Fetch the user's cart (Order with status 'CART')
+            try:
+                cart = Order.objects.get(user=user.customer, status='CART')
+            except Order.DoesNotExist:
                 return Response({"error": "Cart not found or is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Calculate total price
             cart.calculate_total_price()
 
-            # Process payment (dummy logic)
+            # Process payment
             payment_method = serializer.validated_data['payment_method']
             shipping_address = serializer.validated_data['shipping_address']
 
             if payment_method == 'INSTAPAY':
-                # Assume card processing is done here
-                payment_status = True
+                payment_status = True  # Simulate successful payment
             elif payment_method == 'CASH':
                 payment_status = True  # Cash on delivery
             else:
-                payment_status = False
+                return Response({"error": "Invalid payment method."}, status=status.HTTP_400_BAD_REQUEST)
 
-            if not payment_status:
-                return Response({"error": "Payment failed."}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Create a Checkout instance
+            # Save Checkout entry
             checkout = Checkout.objects.create(
-                user=user,
+                user=user.customer,
                 order=cart,
                 payment_method=payment_method,
                 shipping_address=shipping_address,
                 payment_status='PAID' if payment_status else 'FAILED'
             )
 
-            # Update cart status
+            # Update cart status to 'PAID'
             cart.status = 'PAID'
             cart.save()
 
             return Response({
                 "message": "Checkout successful.",
                 "checkout_id": checkout.id,
-                "order_id": cart.id,
                 "total_price": cart.total_price,
-                "status": cart.status
+                "status": cart.status,
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
