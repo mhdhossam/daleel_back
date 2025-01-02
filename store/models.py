@@ -100,10 +100,9 @@ class Order(models.Model):
     status = models.CharField(
         max_length=20,
         choices=[
-        
+        ('CART','CART')
         ],
-        null=True,
-        blank=True,
+        default="CART",
     )
     total_price = models.DecimalField(
         max_digits=10, 
@@ -129,7 +128,7 @@ class Order(models.Model):
         self.save()
     @classmethod
     def get_cart(cls, user):
-        return cls.objects.filter(user=user.customer, status='CART').first()
+        return cls.objects.filter(user=user, status='CART').first()
 
     class Meta:
         ordering = ['-created_at']
