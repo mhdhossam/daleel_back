@@ -32,8 +32,7 @@ urlpatterns = [
     path('api/vendor/dashboard/', VendorDashboardView.as_view(), name='vendor-dashboard'),
 
     path('api/orders/', OrderView.as_view(), name='order-list'),
-     
-
+  
     path('api/cart/add/', AddToCartView.as_view(), name='add-to-cart'),
     path('api/cart/remove/<int:pk>/', RemoveFromCartView.as_view(), name='remove-from-cart'),
     path('api/cart/update/<int:pk>/', UpdateCartView.as_view(), name='update-cart'),
@@ -44,7 +43,7 @@ urlpatterns = [
     path('api/favorites/remove/<int:product_id>/', RemoveFromWishlistView.as_view(), name='remove-from-wishlist'),
     
     path('api/checkout/<int:checkout_id>/', CheckoutView.as_view(), name='checkout'),
-    path('api/checkout/retrieve/', CheckoutRetrieveAPIView.as_view(), name='checkout-retrieve'),
+    path('api/checkout/retrieve/<int:orderId>/', CheckoutRetrieveAPIView.as_view(), name='checkout-retrieve'),
 
 
 
