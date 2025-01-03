@@ -401,7 +401,7 @@ class CheckoutView(APIView):
                 return Response({"error": "Cart not found or is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Calculate total price
-            cart.calculate_total_price()
+            
 
             # Process payment
             payment_method = serializer.validated_data['payment_method']
