@@ -418,12 +418,13 @@ class CheckoutView(APIView):
                     order=cart,
                     payment_method=payment_method,
                     shipping_address=shipping_address,
-                    payment_status='PAID' if payment_status else 'FAILED'
+                    payment_status='PENDING' if payment_status else 'FAILED'
                 )
                 checkouts.append(checkout)
 
                 # Update cart status
-                cart.status = 'PAID'
+                cart.status = 'PENDING'
+                cart.orderstat='PROCESSING'
                 cart.save()
 
             return Response({
