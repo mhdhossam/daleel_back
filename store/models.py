@@ -114,10 +114,7 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"Order #{self.id} by {self.user.username}"
-    def save(self, *args, **kwargs):
-        
-        self.orderstat = "PENDING"  # Overwrites default
-        super().save(*args, **kwargs)
+    
 
     def calculate_total_price(self):
         """
