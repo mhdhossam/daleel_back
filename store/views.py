@@ -396,7 +396,7 @@ class CheckoutView(APIView):
 
             # Fetch the user's cart (Order with status 'CART')
             try:
-                cart = Order.objects.get(user=user.customer)
+                cart = Order.objects.filter(user=user.customer)
             except Order.DoesNotExist:
                 return Response({"error": "Cart not found or is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
