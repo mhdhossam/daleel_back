@@ -128,7 +128,7 @@ class Order(models.Model):
         self.save()
     @classmethod
     def get_cart(cls, user):
-        return cls.objects.filter(user=user, status='CART').first()
+        return cls.objects.filter(user=user, status='CART')
 
     class Meta:
         ordering = ['-created_at']
