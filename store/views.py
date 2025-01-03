@@ -450,7 +450,7 @@ class CheckoutRetrieveAPIView(APIView):
     def get(self, request, *args, **kwargs):
         try:
             # Fetch all PENDING orders for the user
-            orders = Order.objects.filter(user=request.user.customer, orderstat='PENDING')
+            orders = Order.objects.filter(user=request.user.customer, orderstat='PROCESSING')
             if not orders.exists():
                 return Response({"error": "No pending orders found."}, status=status.HTTP_404_NOT_FOUND)
 
