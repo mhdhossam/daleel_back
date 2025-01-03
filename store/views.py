@@ -381,7 +381,7 @@ class RemoveFromWishlistView(DestroyAPIView):
 class CheckoutView(APIView):
     """
     View to handle the checkout process.
-    Automatically fetches user_id and order_id based on the authenticated user.
+    Automatically fetches user_id and processes all CART orders for the authenticated user.
     """
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
@@ -394,52 +394,54 @@ class CheckoutView(APIView):
             if not hasattr(user, 'customer'):
                 return Response({"error": "User is not a customer."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Fetch the user's cart (Order with status 'CART')
-            try:
-                cart = Order.objects.filter(user=user.customer)
-            except Order.DoesNotExist:
+            # Fetch all CART orders for the user
+            cart_orders = Order.objects.filter(user=user.customer, status='CART')
+            if not cart_orders.exists():
                 return Response({"error": "Cart not found or is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Calculate total price
-            
-
-            # Process payment
+            # Process payment and create checkouts for each order
             payment_method = serializer.validated_data['payment_method']
             shipping_address = serializer.validated_data['shipping_address']
 
-            if payment_method == 'INSTAPAY':
-                payment_status = True  # Simulate successful payment
-            elif payment_method == 'CASH':
-                payment_status = True  # Cash on delivery
-            else:
+            payment_status = True if payment_method in ['INSTAPAY', 'CASH'] else False
+            if not payment_status:
                 return Response({"error": "Invalid payment method."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Save Checkout entry
-            checkout = Checkout.objects.create(
-                user=user.customer,
-                order=cart,
-                payment_method=payment_method,
-                shipping_address=shipping_address,
-                payment_status='PAID' if payment_status else 'FAILED'
-            )
+            checkouts = []
+            for cart in cart_orders:
+                # Calculate total price
+                cart.calculate_total_price()
 
-            # Update cart status to 'PAID'
-            cart.status = 'PAID'
-            cart.save()
+                # Create Checkout entry
+                checkout = Checkout.objects.create(
+                    user=user.customer,
+                    order=cart,
+                    payment_method=payment_method,
+                    shipping_address=shipping_address,
+                    payment_status='PAID' if payment_status else 'FAILED'
+                )
+                checkouts.append(checkout)
+
+                # Update cart status
+                cart.status = 'PAID'
+                cart.save()
 
             return Response({
                 "message": "Checkout successful.",
-                "checkout_id": checkout.id,
-                "total_price": cart.total_price,
-                "orderstatus": cart.orderstat,
-                "status": cart.status,
+                "checkouts": [
+                    {
+                        "checkout_id": c.id,
+                        "total_price": c.order.total_price,
+                        "orderstatus": c.order.status,
+                        "status": c.payment_status,
+                    } for c in checkouts
+                ]
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class CheckoutRetrieveAPIView(RetrieveAPIView):
     """
-    API view to retrieve the checkout details for a user's order, including order items.
+    API view to retrieve the checkout details for a user's pending orders.
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -447,13 +449,29 @@ class CheckoutRetrieveAPIView(RetrieveAPIView):
 
     def get_object(self):
         """
-        Retrieve the checkout object for the user's pending order.
+        Retrieve all checkouts for the user's PENDING orders.
         """
         try:
-            order = Order.objects.filter(user=self.request.user.customer, orderstat='PENDING')
-            checkout = Checkout.objects.filter(order=order)
-            return checkout
+            # Fetch all PENDING orders for the user
+            orders = Order.objects.filter(user=self.request.user.customer, orderstat='PENDING')
+            if not orders.exists():
+                raise ValidationError("No pending orders found.")
+
+            # Fetch all associated checkouts
+            checkouts = Checkout.objects.filter(order__in=orders)
+            if not checkouts.exists():
+                raise ValidationError("Checkout details not found.")
+
+            return checkouts  # Returns a QuerySet of checkouts
         except Order.DoesNotExist:
             raise ValidationError("No pending order found.")
         except Checkout.DoesNotExist:
             raise ValidationError("Checkout details not found.")
+
+    def list(self, request, *args, **kwargs):
+        """
+        Serialize and return all matching checkout objects.
+        """
+        checkouts = self.get_object()
+        serializer = self.get_serializer(checkouts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
