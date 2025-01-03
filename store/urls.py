@@ -43,7 +43,7 @@ urlpatterns = [
     path('api/favorites/add/<int:product_id>/', AddToWishlistView.as_view(), name='add-to-wishlist'),
     path('api/favorites/remove/<int:product_id>/', RemoveFromWishlistView.as_view(), name='remove-from-wishlist'),
     
-    path('api/checkout/', CheckoutView.as_view(), name='checkout'),
+    path('api/checkout/<int:checkout_id>/', CheckoutView.as_view(), name='checkout'),
     path('api/checkout/retrieve/', CheckoutRetrieveAPIView.as_view(), name='checkout-retrieve'),
 
 
