@@ -318,7 +318,7 @@ class OrderView(APIView):
             
             if order_id:
                 # Retrieve specific order
-                order = Order.objects.get(id=order_id, user=user)
+                order = Order.objects.filter(id=order_id, user=user)
                 serializer = OrderSerializer(order)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
