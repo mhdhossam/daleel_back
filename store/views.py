@@ -439,39 +439,27 @@ class CheckoutView(APIView):
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-class CheckoutRetrieveAPIView(RetrieveAPIView):
+class CheckoutRetrieveAPIView(APIView):
     """
-    API view to retrieve the checkout details for a user's pending orders.
+    API view to retrieve all checkout details for a user's pending orders.
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    serializer_class = CheckoutSerializer
 
-    def get_object(self):
-        """
-        Retrieve all checkouts for the user's PENDING orders.
-        """
+    def get(self, request, *args, **kwargs):
         try:
             # Fetch all PENDING orders for the user
-            orders = Order.objects.filter(user=self.request.user.customer, orderstat='PENDING')
+            orders = Order.objects.filter(user=request.user.customer, orderstat='PENDING')
             if not orders.exists():
-                raise ValidationError("No pending orders found.")
+                return Response({"error": "No pending orders found."}, status=status.HTTP_404_NOT_FOUND)
 
             # Fetch all associated checkouts
             checkouts = Checkout.objects.filter(order__in=orders)
             if not checkouts.exists():
-                raise ValidationError("Checkout details not found.")
+                return Response({"error": "No checkout details found."}, status=status.HTTP_404_NOT_FOUND)
 
-            return checkouts  # Returns a QuerySet of checkouts
-        except Order.DoesNotExist:
-            raise ValidationError("No pending order found.")
-        except Checkout.DoesNotExist:
-            raise ValidationError("Checkout details not found.")
-
-    def list(self, request, *args, **kwargs):
-        """
-        Serialize and return all matching checkout objects.
-        """
-        checkouts = self.get_object()
-        serializer = self.get_serializer(checkouts, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            # Serialize multiple checkouts
+            serializer = CheckoutSerializer(checkouts, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
